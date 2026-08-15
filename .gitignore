@@ -1,0 +1,39 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+
+# IDE/editor state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+
+# Local secrets and environment overrides
+secrets.json
+**/secrets.json
+appsettings.Local.json
+**/appsettings.Local.json
+.env
+.env.*
+!.env.example
+
+# Runtime data and imports
+uploads/
+logs/
+CODA/
+CreditCardStatements/
+*.coda
+*.cod
+
+# Local financial/source data
+*.xlsx
+*.xls
+*.csv
+*.pdf
+
+# OS noise
+Thumbs.db
+.DS_Store

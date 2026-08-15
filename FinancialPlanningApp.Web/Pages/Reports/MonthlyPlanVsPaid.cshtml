@@ -1,0 +1,66 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reports.MonthlyPlanVsPaidModel
+@{
+    ViewData["Title"] = "Maandplan versus betaald";
+}
+
+<h2>Maandplan versus betaald</h2>
+<p class="text-muted">Gebruikt dezelfde definities als het dashboard: verwachte kosten zijn geplande recurrente kosten, betaalde kosten zijn gemapte kosten toegewezen aan de rapporteringsmaand, en kostenverschil is betaald min verwacht.</p>
+<form method="get" class="mb-3">
+    <label asp-for="Year" class="form-label">Jaar</label>
+    <input asp-for="Year" class="form-control" style="max-width: 200px;" />
+    <button type="submit" class="btn btn-outline-secondary mt-2">Laden</button>
+</form>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Maand</th>
+            <th class="text-end">Verwachte kosten</th>
+            <th class="text-end">Betaalde kosten</th>
+            <th class="text-end">Kostenverschil</th>
+            <th class="text-end">Geprovisioneerd</th>
+            <th class="text-end">Gemapte balans</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows.Where(r => !r.IsYearTotal))
+    {
+        var paidCosts = Math.Abs(row.MappedToMonthTotal);
+        var costDiff = paidCosts - row.PlannedTotal;
+        <tr>
+            <td>@row.Month</td>
+            <td class="text-end">@row.PlannedTotal.ToString("C")</td>
+            <td class="text-end">@paidCosts.ToString("C")</td>
+            <td class="text-end">
+                <a class="@(costDiff > 0 ? "text-danger" : costDiff < 0 ? "text-success" : null)"
+                   asp-page="/Reports/MonthlyCostVariance"
+                   asp-route-Year="@Model.Year"
+                   asp-route-Month="@row.Month">
+                    @costDiff.ToString("+0.00;-0.00;0.00")
+                </a>
+            </td>
+            <td class="text-end">@row.DepositedTotal.ToString("C")</td>
+            <td class="text-end">@row.ProvisionedBalanceEndOfMonth.ToString("C")</td>
+        </tr>
+    }
+    </tbody>
+    @{
+        var total = Model.Rows.FirstOrDefault(r => r.IsYearTotal);
+    }
+    @if (total is not null)
+    {
+        var totalPaidCosts = Math.Abs(total.MappedToMonthTotal);
+        var totalCostDiff = totalPaidCosts - total.PlannedTotal;
+        <tfoot>
+            <tr class="table-secondary fw-semibold">
+                <td>Totaal @Model.Year</td>
+                <td class="text-end">@total.PlannedTotal.ToString("C")</td>
+                <td class="text-end">@totalPaidCosts.ToString("C")</td>
+                <td class="text-end @(totalCostDiff > 0 ? "text-danger" : totalCostDiff < 0 ? "text-success" : null)">@totalCostDiff.ToString("+0.00;-0.00;0.00")</td>
+                <td class="text-end">@total.DepositedTotal.ToString("C")</td>
+                <td class="text-end">@total.ProvisionedBalanceEndOfMonth.ToString("C")</td>
+            </tr>
+        </tfoot>
+    }
+</table>

@@ -1,0 +1,60 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reports.ProvisionForecastModel
+@{
+    ViewData["Title"] = "Provisieprognose";
+}
+
+<h2>Provisieprognose</h2>
+<p class="text-muted">Maandelijkse verwachte recurrente kosten, werkelijke recurrente kosten, afwijking, jaargemiddelde, provisie (betaald + prognose), en geprojecteerde versus werkelijke maand-eindbalans.</p>
+
+<form method="get" class="row g-3 mb-3">
+    <div class="col-md-2">
+        <label asp-for="Year" class="form-label">Jaar</label>
+        <input asp-for="Year" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="OpeningBalance" class="form-label">Beginsaldo (optionele override)</label>
+        <input asp-for="OpeningBalance" class="form-control" />
+    </div>
+    <div class="col-md-3 mt-4">
+        <button type="submit" class="btn btn-outline-secondary">Laden</button>
+    </div>
+</form>
+
+<div class="alert alert-light border">
+    Bepaald beginsaldo voor @Model.Year: <strong>@Model.ResolvedOpeningBalance.ToString("F2")</strong>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Maand</th>
+            <th>Verwachte kosten</th>
+            <th>Werkelijke recurrente kosten</th>
+            <th>Recurrent verschil</th>
+            <th>Verschil %</th>
+            <th>Jaargemiddelde kosten</th>
+            <th>Provisie (betaald + prognose)</th>
+            <th>Geprojecteerde eindbalans</th>
+            <th>Werkelijke eindbalans</th>
+            <th>Balansverschil</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.Month</td>
+            <td>@row.ExpectedCosts.ToString("F2")</td>
+            <td>@row.ActualRecurringCosts.ToString("F2")</td>
+            <td>@row.RecurrentDifference.ToString("F2")</td>
+            <td>@row.RecurrentDifferencePercent.ToString("F1")%</td>
+            <td>@row.YearlyAverageCosts.ToString("F2")</td>
+            <td>@row.ProvisioningPaidAndForecast.ToString("F2")</td>
+            <td>@row.EndOfMonthBalance.ToString("F2")</td>
+            <td>@(row.ActualEndOfMonthBalance?.ToString("F2") ?? "-")</td>
+            <td>@(row.BalanceDifference?.ToString("F2") ?? "-")</td>
+        </tr>
+    }
+    </tbody>
+</table>

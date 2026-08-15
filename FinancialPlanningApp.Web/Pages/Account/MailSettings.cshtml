@@ -1,0 +1,134 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.MailSettingsModel
+@{
+    ViewData["Title"] = "Mailinstellingen";
+}
+
+<h1>Mailinstellingen</h1>
+<p>Configureer de globale mailverzender. Deze instellingen worden opgeslagen met <code>tenant_id = NULL</code> en kunnen later uitgebreid worden met tenant-specifieke overrides.</p>
+
+@if (TempData["StatusMessage"] is string statusMessage)
+{
+    <div class="alert alert-success" role="alert">@statusMessage</div>
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form method="post" class="mt-3" style="max-width: 760px;">
+    <section class="mb-4">
+        <h2 class="h5">Globale verzender</h2>
+        <div class="row g-3">
+            <div class="col-md-4 form-check mt-4">
+                <input asp-for="Input.IsEnabled" class="form-check-input" />
+                <label asp-for="Input.IsEnabled" class="form-check-label">Mailverzending inschakelen</label>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.Provider" class="form-label">Provider</label>
+                <select asp-for="Input.Provider" class="form-select">
+                    @foreach (var provider in MailSettingsModel.Providers)
+                    {
+                        <option value="@provider">@provider</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Input.FromEmail" class="form-label">Afzender e-mail</label>
+                <input asp-for="Input.FromEmail" class="form-control" placeholder="afzenderadres" />
+                <span asp-validation-for="Input.FromEmail" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.FromName" class="form-label">Afzendernaam</label>
+                <input asp-for="Input.FromName" class="form-control" placeholder="FinancialPlanningApp" />
+                <span asp-validation-for="Input.FromName" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.BaseUrl" class="form-label">Publieke app-URL</label>
+                <input asp-for="Input.BaseUrl" class="form-control" placeholder="https://example.com" />
+                <div class="form-text">Gebruikt voor wachtwoord-resetlinks. Laat leeg om de huidige request-URL te gebruiken.</div>
+                <span asp-validation-for="Input.BaseUrl" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.ApiKey" class="form-label">API key</label>
+                <input asp-for="Input.ApiKey" class="form-control" autocomplete="off" placeholder="@(Model.HasApiKey ? "Opgeslagen - leeg laten om te behouden" : "Provider API key plakken")" />
+                <div class="form-text">Gebruikt door Brevo, Resend, Postmark, SendGrid en Mailgun API-modus.</div>
+                @if (Model.HasApiKey)
+                {
+                    <div class="form-check mt-1">
+                        <input asp-for="Input.ClearApiKey" class="form-check-input" />
+                        <label asp-for="Input.ClearApiKey" class="form-check-label">Opgeslagen API key wissen</label>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5">SMTP-relay fallback</h2>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="Input.SmtpHost" class="form-label">SMTP host</label>
+                <input asp-for="Input.SmtpHost" class="form-control" placeholder="smtp.gmail.com" />
+                <span asp-validation-for="Input.SmtpHost" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Input.SmtpPort" class="form-label">Port</label>
+                <input asp-for="Input.SmtpPort" class="form-control" inputmode="numeric" />
+                <span asp-validation-for="Input.SmtpPort" class="text-danger"></span>
+            </div>
+            <div class="col-md-3 form-check mt-4">
+                <input asp-for="Input.SmtpUseSsl" class="form-check-input" />
+                <label asp-for="Input.SmtpUseSsl" class="form-check-label">SSL/TLS gebruiken</label>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.SmtpUsername" class="form-label">SMTP-gebruikersnaam</label>
+                <input asp-for="Input.SmtpUsername" class="form-control" autocomplete="off" placeholder="SMTP gebruikersnaam" />
+                <span asp-validation-for="Input.SmtpUsername" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.SmtpPassword" class="form-label">SMTP-wachtwoord</label>
+                <input asp-for="Input.SmtpPassword" class="form-control" autocomplete="off" placeholder="@(Model.HasSmtpPassword ? "Opgeslagen - leeg laten om te behouden" : "SMTP-wachtwoord plakken")" />
+                @if (Model.HasSmtpPassword)
+                {
+                    <div class="form-check mt-1">
+                        <input asp-for="Input.ClearSmtpPassword" class="form-check-input" />
+                        <label asp-for="Input.ClearSmtpPassword" class="form-check-label">Opgeslagen SMTP-wachtwoord wissen</label>
+                    </div>
+                }
+            </div>
+            <div class="col-12">
+                <div class="form-text">
+                    Gmail met een app password: provider CustomSmtp, host smtp.gmail.com, poort 465, SSL/TLS ingeschakeld, gebruikersnaam je Gmail-adres, wachtwoord het Google app password.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mb-4">
+        <h2 class="h5">Testmail</h2>
+        <div class="row g-2 align-items-end">
+        <div class="col-md-6">
+            <label asp-for="TestMail.RecipientEmail" class="form-label">E-mail ontvanger</label>
+            <input asp-for="TestMail.RecipientEmail" class="form-control" placeholder="ontvangeradres" />
+            <span asp-validation-for="TestMail.RecipientEmail" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <div class="form-text">
+                Opslaan en test versturen bewaart eerst bovenstaande waarden en stuurt daarna de testmail met die opgeslagen configuratie.
+            </div>
+        </div>
+        </div>
+    </section>
+
+    <div class="d-flex align-items-center gap-3">
+        <button type="submit" class="btn btn-primary" formnovalidate>Mailinstellingen opslaan</button>
+        <button type="submit" asp-page-handler="SendTest" class="btn btn-outline-primary">Opslaan en test versturen</button>
+        @if (Model.UpdatedUtc is not null)
+        {
+            <span class="text-muted small">Laatst bijgewerkt UTC: @Model.UpdatedUtc.Value.ToString("yyyy-MM-dd HH:mm")</span>
+        }
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

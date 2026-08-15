@@ -1,0 +1,224 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reconciliation.ManualModel
+@{
+    ViewData["Title"] = "Manueel afpunten";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-2 mb-3">
+    <div>
+        <h2 class="mb-1">Manueel afpunten</h2>
+        <p class="text-muted mb-0">Voer betaalde recurrente kosten, banksaldo en kredietkaartafrekeningen in zonder bankimport.</p>
+    </div>
+    <a asp-page="/Reconciliation/Index" class="btn btn-outline-secondary">Reconciliatie openen</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success">@Model.StatusMessage</div>
+}
+
+<form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-sm-3 col-lg-2">
+        <label asp-for="Year" class="form-label">Jaar</label>
+        <input asp-for="Year" class="form-control" />
+    </div>
+    <div class="col-sm-3 col-lg-2">
+        <label asp-for="Month" class="form-label">Maand</label>
+        <select asp-for="Month" class="form-select">
+            @for (var month = 1; month <= 12; month++)
+            {
+                <option value="@month">@month.ToString("00")</option>
+            }
+        </select>
+    </div>
+    <div class="col-sm-3 col-lg-2">
+        <button type="submit" class="btn btn-outline-secondary">Laden</button>
+    </div>
+</form>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h5">Banksaldo</h3>
+                <form method="post" asp-page-handler="SaveBalance" class="row g-3 align-items-end">
+                    <input type="hidden" asp-for="Year" />
+                    <input type="hidden" asp-for="Month" />
+                    <div class="col-12">
+                        <label asp-for="BalanceInput.AccountNumber" class="form-label">Rekening</label>
+                        <input asp-for="BalanceInput.AccountNumber" class="form-control" placeholder="optioneel" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="BalanceInput.OpeningBalance" class="form-label">Beginsaldo</label>
+                        <input asp-for="BalanceInput.OpeningBalance" class="form-control" type="text" inputmode="decimal" data-val="false" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="BalanceInput.ClosingBalance" class="form-label">Eindsaldo / huidig saldo</label>
+                        <input asp-for="BalanceInput.ClosingBalance" class="form-control" type="text" inputmode="decimal" data-val="false" />
+                        <span asp-validation-for="BalanceInput.ClosingBalance" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Saldo bewaren</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h5">Maandelijkse provisie</h3>
+                <div class="text-muted small mb-3">
+                    Voorgesteld @Model.SuggestedMonthlyProvision.ToString("C"); reeds geregistreerd deze maand @Model.ProvisionedThisMonth.ToString("C").
+                </div>
+                <form method="post" asp-page-handler="AddProvision" class="row g-3 align-items-end">
+                    <input type="hidden" asp-for="Year" />
+                    <input type="hidden" asp-for="Month" />
+                    <div class="col-md-6">
+                        <label asp-for="ProvisionInput.PaymentDate" class="form-label">Stortingsdatum</label>
+                        <input asp-for="ProvisionInput.PaymentDate" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ProvisionInput.Amount" class="form-label">Bedrag</label>
+                        <input asp-for="ProvisionInput.Amount" class="form-control" type="text" inputmode="decimal" data-val="false" />
+                        <span asp-validation-for="ProvisionInput.Amount" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ProvisionInput.PaymentMethod" class="form-label">Betaalwijze</label>
+                        <select asp-for="ProvisionInput.PaymentMethod" class="form-select">
+                            <option value="Transfer">Overschrijving</option>
+                            <option value="DirectDebit">Domiciliering</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ProvisionInput.Description" class="form-label">Omschrijving</label>
+                        <input asp-for="ProvisionInput.Description" class="form-control" placeholder="Maandelijkse provisie" />
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">Provisie toevoegen</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h3 class="h5">Kredietkaartafrekening</h3>
+                <form method="post" asp-page-handler="AddCardSettlement" class="row g-3 align-items-end">
+                    <input type="hidden" asp-for="Year" />
+                    <input type="hidden" asp-for="Month" />
+                    <div class="col-md-6">
+                        <label asp-for="CardSettlementInput.PaymentDate" class="form-label">Betaaldatum</label>
+                        <input asp-for="CardSettlementInput.PaymentDate" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="CardSettlementInput.Amount" class="form-label">Bedrag</label>
+                        <input asp-for="CardSettlementInput.Amount" class="form-control" type="text" inputmode="decimal" data-val="false" />
+                        <span asp-validation-for="CardSettlementInput.Amount" class="text-danger"></span>
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="CardSettlementInput.Description" class="form-label">Omschrijving</label>
+                        <input asp-for="CardSettlementInput.Description" class="form-control" placeholder="Kredietkaartafrekening" />
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Afrekening toevoegen</button>
+                        <div class="form-text">Wordt gemapt als kredietkaartafrekening en telt niet mee als kost.</div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Recurrente betaling</th>
+                <th>Schema</th>
+                <th class="text-end">Verwacht</th>
+                <th class="text-end">Betaald</th>
+                <th class="text-end">Verschil</th>
+                <th>Afpunten</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            <tr>
+                <td>
+                    <div class="fw-semibold">@row.Description</div>
+                    <div class="text-muted small">@row.PaymentMethod</div>
+                </td>
+                <td>
+                    <div>@row.Schedule</div>
+                    <div class="text-muted small">Vervaldag @row.DueDate.ToString("dd/MM/yyyy")</div>
+                </td>
+                <td class="text-end">@row.ExpectedAmount.ToString("C")</td>
+                <td class="text-end">@row.PaidAmount.ToString("C")</td>
+                <td class="text-end @(row.Difference > 0 ? "text-danger" : row.Difference < 0 ? "text-success" : null)">
+                    @row.Difference.ToString("+0.00;-0.00;0.00")
+                </td>
+                <td style="min-width: 420px;">
+                    <form method="post" asp-page-handler="MarkPaid" class="row g-2 align-items-end">
+                        <input type="hidden" asp-for="Year" />
+                        <input type="hidden" asp-for="Month" />
+                        <input type="hidden" name="templateId" value="@row.TemplateId" />
+                        <div class="col-4">
+                            <label class="form-label small" for="amount-@row.TemplateId">Bedrag</label>
+                            <input id="amount-@row.TemplateId" name="amount" class="form-control form-control-sm" type="text" inputmode="decimal" value="@row.SuggestedAmount.ToString("0.00")" data-val="false" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small" for="paidDate-@row.TemplateId">Betaaldatum</label>
+                            <input id="paidDate-@row.TemplateId" name="paidDate" class="form-control form-control-sm" value="@row.DueDate.ToString("yyyy-MM-dd")" type="date" />
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label small" for="method-@row.TemplateId">Betaalwijze</label>
+                            <select id="method-@row.TemplateId" name="paymentMethod" class="form-select form-select-sm">
+                                @if (row.PaymentMethod == "Transfer")
+                                {
+                                    <option value="Transfer" selected>Overschrijving</option>
+                                }
+                                else
+                                {
+                                    <option value="Transfer">Overschrijving</option>
+                                }
+                                @if (row.PaymentMethod == "DirectDebit")
+                                {
+                                    <option value="DirectDebit" selected>Domiciliering</option>
+                                }
+                                else
+                                {
+                                    <option value="DirectDebit">Domiciliering</option>
+                                }
+                                @if (row.PaymentMethod == "CreditCard")
+                                {
+                                    <option value="CreditCard" selected>Kredietkaart</option>
+                                }
+                                else
+                                {
+                                    <option value="CreditCard">Kredietkaart</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-9">
+                            <label class="form-label small" for="note-@row.TemplateId">Nota</label>
+                            <input id="note-@row.TemplateId" name="note" class="form-control form-control-sm" placeholder="optioneel" />
+                        </div>
+                        <div class="col-3 d-grid">
+                            <button type="submit" class="btn btn-sm @(row.IsPaid ? "btn-outline-secondary" : "btn-primary")">Afpunten</button>
+                        </div>
+                    </form>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

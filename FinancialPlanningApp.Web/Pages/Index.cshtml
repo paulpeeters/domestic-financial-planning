@@ -1,0 +1,238 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+@if (!User.Identity?.IsAuthenticated ?? true)
+{
+    <div class="alert alert-info">
+        Gelieve <a asp-page="/Account/Login">aan te melden</a> of <a asp-page="/Account/Register">een account aan te maken</a>.
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-2 mb-4">
+        <div>
+            <h1 class="h2 mb-1">Dashboard Financiële Planning</h1>
+            <p class="text-muted mb-0">Provisies, gemapte kosten, recente maanden en laatste rekeningsaldo voor @Model.Dashboard.Year.</p>
+        </div>
+        <div class="text-muted small">
+            Huidige maand: @Model.Dashboard.CurrentMonth.ToString("00")
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">Verwachte jaarkost</div>
+                    <div class="display-6">@Model.Dashboard.ExpectedYearlyCost.ToString("C")</div>
+                    <div class="text-muted small">Vaste maandelijkse provisie: @Model.Dashboard.FixedMonthlyProvision.ToString("C")</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">Geprovisioneerd YTD</div>
+                    <div class="display-6">@Model.Dashboard.ActualProvisionedYtd.ToString("C")</div>
+                    <div class="small @(Model.Dashboard.ProvisionGap < 0 ? "text-danger" : "text-success")">
+                        Verwacht @Model.Dashboard.ExpectedProvisionYtd.ToString("C") (@Model.Dashboard.ProvisionGap.ToString("+0.00;-0.00;0.00"))
+                    </div>
+                    @if (Model.Dashboard.PresumedProvisionedYtd > 0m)
+                    {
+                        <div class="small text-muted">Vermoedelijk nog niet geregistreerd @Model.Dashboard.PresumedProvisionedYtd.ToString("C")</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">Betaalde kosten YTD</div>
+                    <div class="display-6">@Model.Dashboard.ActualPaidCostsYtd.ToString("C")</div>
+                    <div class="small @(Model.Dashboard.CostGapYtd > 0 ? "text-danger" : "text-success")">
+                        Verwacht @Model.Dashboard.ExpectedCostsYtd.ToString("C") (@Model.Dashboard.CostGapYtd.ToString("+0.00;-0.00;0.00"))
+                    </div>
+                    @if (Model.Dashboard.PresumedPaidCostsYtd > 0m)
+                    {
+                        <div class="small text-muted">Vermoedelijk betaald @Model.Dashboard.PresumedPaidCostsYtd.ToString("C")</div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small text-uppercase fw-semibold">Laatste rekeningsaldo</div>
+                    <div class="display-6">@(Model.Dashboard.CurrentAccountBalance?.ToString("C") ?? "-")</div>
+                    <div class="text-muted small">
+                        @(Model.Dashboard.CurrentAccountBalanceMonth is null ? "Nog geen saldo geimporteerd" : $"Geimporteerde maand {Model.Dashboard.CurrentAccountBalanceMonth:00}")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-2">
+            <h2 class="h5 mb-0">Recente maanden</h2>
+            <div class="text-muted small">CODA-uittreksels zijn meestal volledig vanaf dag 6 van de volgende maand; energiebetalingen kunnen twee maanden achterlopen.</div>
+        </div>
+        <div class="row g-3">
+            @foreach (var row in Model.FocusMonths)
+            {
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between gap-2">
+                                <div>
+                                    <div class="text-muted small text-uppercase fw-semibold">@row.Label</div>
+                                    <h3 class="h5 mb-0">@row.Year-@row.Month.ToString("00")</h3>
+                                </div>
+                                <a class="btn btn-sm btn-outline-secondary align-self-start"
+                                   asp-page="/Reports/MonthlyCostVariance"
+                                   asp-route-Year="@row.Year"
+                                   asp-route-Month="@row.Month">Details</a>
+                            </div>
+                            <dl class="row mt-3 mb-0">
+                                <dt class="col-7 fw-normal text-muted">Verwachte kosten</dt>
+                                <dd class="col-5 text-end">@row.ExpectedCosts.ToString("C")</dd>
+                                <dt class="col-7 fw-normal text-muted">Betaalde kosten</dt>
+                                <dd class="col-5 text-end">@row.PaidCosts.ToString("C")</dd>
+                                @if (row.PresumedPaidCosts > 0m)
+                                {
+                                    <dt class="col-7 fw-normal text-muted">Vermoedelijk betaald</dt>
+                                    <dd class="col-5 text-end">@row.PresumedPaidCosts.ToString("C")</dd>
+                                }
+                                <dt class="col-7 fw-normal text-muted">Kostenverschil</dt>
+                                <dd class="col-5 text-end fw-semibold @(row.CostDifference > 0 ? "text-danger" : row.CostDifference < 0 ? "text-success" : null)">
+                                    @row.CostDifference.ToString("+0.00;-0.00;0.00")
+                                </dd>
+                                <dt class="col-7 fw-normal text-muted">Geprovisioneerd</dt>
+                                <dd class="col-5 text-end">@row.Provisioned.ToString("C")</dd>
+                                @if (row.PresumedProvisioned > 0m)
+                                {
+                                    <dt class="col-7 fw-normal text-muted">Vermoedelijk provisie</dt>
+                                    <dd class="col-5 text-end">@row.PresumedProvisioned.ToString("C")</dd>
+                                }
+                            </dl>
+                            @if (row.PendingItems.Count > 0)
+                            {
+                                <div class="border-top mt-3 pt-2">
+                                    <div class="text-muted small text-uppercase fw-semibold mb-1">Vermoedelijk, nog niet geregistreerd</div>
+                                    <div class="d-flex flex-column gap-1">
+                                        @foreach (var item in row.PendingItems)
+                                        {
+                                            var isIncluded = item.Kind != "Niet meegeteld";
+                                            <div class="d-flex justify-content-between gap-2 small @(isIncluded ? null : "text-muted")">
+                                                <span class="text-truncate" title="@($"{item.Description} - {item.Detail}")">
+                                                    @if (!isIncluded)
+                                                    {
+                                                        <span>niet meegeteld: </span>
+                                                    }
+                                                    @item.Description
+                                                </span>
+                                                <span class="text-nowrap">@(isIncluded ? item.Amount.ToString("C") : "-")</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Deze maand</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-7 fw-normal text-muted">Verwachte kosten</dt>
+                        <dd class="col-5 text-end">@Model.Dashboard.CurrentMonthExpectedCosts.ToString("C")</dd>
+                        <dt class="col-7 fw-normal text-muted">Betaalde kosten</dt>
+                        <dd class="col-5 text-end">@Model.Dashboard.CurrentMonthPaidCosts.ToString("C")</dd>
+                        <dt class="col-7 fw-normal text-muted">Vermoedelijk betaald</dt>
+                        <dd class="col-5 text-end">@Model.Dashboard.CurrentMonthPresumedPaidCosts.ToString("C")</dd>
+                        <dt class="col-7 fw-normal text-muted">Vermoedelijk provisie</dt>
+                        <dd class="col-5 text-end">@Model.Dashboard.CurrentMonthPresumedProvisioned.ToString("C")</dd>
+                        <dt class="col-7 fw-normal text-muted">Nog verwacht</dt>
+                        <dd class="col-5 text-end fw-semibold">@Model.Dashboard.CurrentMonthRemainingCosts.ToString("C")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Rest van het jaar</h2>
+                    <dl class="row mb-0">
+                        <dt class="col-7 fw-normal text-muted">Nog te provisioneren</dt>
+                        <dd class="col-5 text-end">@Model.Dashboard.RemainingProvisionExpected.ToString("C")</dd>
+                        <dt class="col-7 fw-normal text-muted">Nog verwachte kosten</dt>
+                        <dd class="col-5 text-end">@Model.Dashboard.RemainingCostsForYear.ToString("C")</dd>
+                        <dt class="col-7 fw-normal text-muted">Prognose jaareinde</dt>
+                        <dd class="col-5 text-end fw-semibold">@(Model.Dashboard.ProjectedYearEndBalance?.ToString("C") ?? "-")</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Snelle links</h2>
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-outline-primary" asp-page="/Reports/ProvisionForecast">Provisieprognose</a>
+                        <a class="btn btn-outline-primary" asp-page="/Reports/MonthlyCostVariance" asp-route-Year="@Model.Dashboard.Year" asp-route-Month="@Model.Dashboard.CurrentMonth">Maandelijkse kostenafwijking</a>
+                        <a class="btn btn-outline-primary" asp-page="/Reports/RecurringPaymentProvision">Provisie recurrente betalingen</a>
+                        <a class="btn btn-outline-secondary" asp-page="/Reconciliation/Index">Reconciliatie</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>Maand</th>
+                    <th class="text-end">Verwachte kosten</th>
+                    <th class="text-end">Betaalde kosten</th>
+                    <th class="text-end">Vermoedelijk betaald</th>
+                    <th class="text-end">Kostenverschil</th>
+                    <th class="text-end">Geprovisioneerd</th>
+                    <th class="text-end">Vermoedelijk provisie</th>
+                    <th class="text-end">Gemapte balans</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var row in Model.Months)
+            {
+                <tr class="@(row.Month == Model.Dashboard.CurrentMonth ? "table-primary" : null)">
+                    <td>@row.Month.ToString("00")</td>
+                    <td class="text-end">@row.ExpectedCosts.ToString("C")</td>
+                    <td class="text-end">@row.PaidCosts.ToString("C")</td>
+                    <td class="text-end">@(row.PresumedPaidCosts > 0m ? row.PresumedPaidCosts.ToString("C") : "-")</td>
+                    <td class="text-end">
+                        <a class="@(row.CostDifference > 0 ? "text-danger" : row.CostDifference < 0 ? "text-success" : null)"
+                           asp-page="/Reports/MonthlyCostVariance"
+                           asp-route-Year="@Model.Dashboard.Year"
+                           asp-route-Month="@row.Month">
+                            @row.CostDifference.ToString("+0.00;-0.00;0.00")
+                        </a>
+                    </td>
+                    <td class="text-end">@row.Provisioned.ToString("C")</td>
+                    <td class="text-end">@(row.PresumedProvisioned > 0m ? row.PresumedProvisioned.ToString("C") : "-")</td>
+                    <td class="text-end">@row.BalanceAfterMappedItems.ToString("C")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+}

@@ -1,0 +1,384 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.GlobalAdminsModel
+@{
+    ViewData["Title"] = "Globale admins";
+}
+
+<h1>Globale admins</h1>
+<p>Beheer globale administratorrechten, tenants, tenantlidmaatschappen en zelfregistratie.</p>
+<p><a asp-page="/Account/LoginHistory">Loginhistoriek openen</a></p>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<section class="mb-4">
+    <h2 class="h5">Zelfregistratie</h2>
+    <form method="post" asp-page-handler="SelfRegistration" class="row g-2 align-items-center">
+        <div class="col-auto">
+            <select name="SelfRegistrationInputModel.AllowSelfRegistration" class="form-select form-select-sm">
+                @if (Model.AllowSelfRegistration)
+                {
+                    <option value="true" selected>Ingeschakeld</option>
+                    <option value="false">Uitgeschakeld</option>
+                }
+                else
+                {
+                    <option value="true">Ingeschakeld</option>
+                    <option value="false" selected>Uitgeschakeld</option>
+                }
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary btn-sm">Opslaan</button>
+        </div>
+    </form>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Gebruiker maken en tenant toewijzen</h2>
+    <form method="post" asp-page-handler="CreateUser" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label asp-for="CreateUser.Email" class="form-label">Email</label>
+            <input asp-for="CreateUser.Email" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label asp-for="CreateUser.Password" class="form-label">Wachtwoord</label>
+            <input asp-for="CreateUser.Password" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label asp-for="CreateUser.FirstName" class="form-label">Voornaam</label>
+            <input asp-for="CreateUser.FirstName" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <label asp-for="CreateUser.LastName" class="form-label">Naam</label>
+            <input asp-for="CreateUser.LastName" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="CreateUser.AvatarUrl" class="form-label">Avatar URL</label>
+            <input asp-for="CreateUser.AvatarUrl" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="CreateUser.TenantId" class="form-label">Tenant</label>
+            <select asp-for="CreateUser.TenantId" class="form-select">
+                @foreach (var t in Model.Tenants.Where(t => t.IsActive))
+                {
+                    var shortDisplay = string.IsNullOrWhiteSpace(t.ShortName) ? $"#{t.Id}" : t.ShortName;
+                    <option value="@t.Id">@shortDisplay - @t.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label asp-for="CreateUser.Role" class="form-label">Rol</label>
+            <select asp-for="CreateUser.Role" class="form-select">
+                <option value="OWNER">OWNER</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="EDITOR">EDITOR</option>
+                <option value="VIEWER">VIEWER</option>
+            </select>
+        </div>
+        <div class="col-md-2 form-check mb-2">
+            <input asp-for="CreateUser.IsActive" class="form-check-input" />
+            <label asp-for="CreateUser.IsActive" class="form-check-label">Actief</label>
+        </div>
+        <div class="col-md-2 form-check mb-2">
+            <input asp-for="CreateUser.IsGlobalAdmin" class="form-check-input" />
+            <label asp-for="CreateUser.IsGlobalAdmin" class="form-check-label">Globale admin</label>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-primary">Gebruiker maken</button>
+        </div>
+    </form>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Tenants</h2>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+            <tr>
+                <th>Naam</th>
+                <th>Kort</th>
+                <th>Actief</th>
+                <th>Actie</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var tenant in Model.Tenants)
+            {
+                <tr>
+                    <td>@tenant.Name</td>
+                    <td>@(string.IsNullOrWhiteSpace(tenant.ShortName) ? "-" : tenant.ShortName)</td>
+                    <td>@(tenant.IsActive ? "Ja" : "Nee")</td>
+                    <td>
+                        <form method="post"
+                              asp-page-handler="SetTenantActive"
+                              class="d-inline"
+                              data-confirm-title="@(tenant.IsActive ? "Tenant deactiveren" : "Tenant reactiveren")"
+                              data-confirm-message="@(tenant.IsActive ? "Deze tenant deactiveren? Gebruikers kunnen er dan niet meer naartoe wisselen." : "Deze tenant reactiveren?")">
+                            <input type="hidden" name="TenantActive.TenantId" value="@tenant.Id" />
+                            <input type="hidden" name="TenantActive.IsActive" value="@(!tenant.IsActive)" />
+                            <button type="submit"
+                                    class="btn btn-sm @(tenant.IsActive ? "btn-outline-warning" : "btn-outline-success")">
+                                @(tenant.IsActive ? "Deactiveren" : "Reactiveren")
+                            </button>
+                        </form>
+                        @if (!tenant.IsActive)
+                        {
+                            <details class="mt-2">
+                                <summary class="text-danger">Tenant en data definitief verwijderen</summary>
+                                <form method="post" asp-page-handler="PurgeTenant" class="border rounded p-2 mt-2">
+                                    <input type="hidden" name="PurgeTenant.TenantId" value="@tenant.Id" />
+                                    <p class="small text-danger mb-2">
+                                        Verwijdert deze tenant, tenantdata, lidmaatschappen en gebruikers die alleen aan deze tenant gekoppeld zijn definitief.
+                                    </p>
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Captcha: @GlobalAdminsModel.GetPurgeCaptchaQuestion(tenant.Id)</label>
+                                            <input name="PurgeTenant.CaptchaAnswer" class="form-control form-control-sm" inputmode="numeric" />
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label class="form-label small">Typ @GlobalAdminsModel.GetPurgeConfirmationText(tenant.Id)</label>
+                                            <input name="PurgeTenant.ConfirmationText" class="form-control form-control-sm" autocomplete="off" />
+                                        </div>
+                                        <div class="col-md-3 form-check mb-1">
+                                            <input name="PurgeTenant.ConfirmDataLoss" value="true" class="form-check-input" type="checkbox" />
+                                            <label class="form-check-label small">Ik begrijp dat dit definitief is</label>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-danger"
+                                                    data-confirm-title="Tenant definitief verwijderen"
+                                                    data-confirm-message="Laatste bevestiging: deze tenant en alle data definitief verwijderen?">
+                                                Verwijderen
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </details>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Tenant maken</h2>
+    <form method="post" asp-page-handler="CreateTenant" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label asp-for="TenantInput.Name" class="form-label">Tenantnaam</label>
+            <input asp-for="TenantInput.Name" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="TenantInput.ShortName" class="form-label">Korte naam (max 10)</label>
+            <input asp-for="TenantInput.ShortName" class="form-control" maxlength="10" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-primary">Maken</button>
+        </div>
+    </form>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Gebruiker aan tenant toevoegen</h2>
+    <form method="post" asp-page-handler="AddMembership" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label asp-for="MembershipInput.Email" class="form-label">E-mail gebruiker</label>
+            <input asp-for="MembershipInput.Email" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="MembershipInput.TenantId" class="form-label">Tenant</label>
+            <select asp-for="MembershipInput.TenantId" class="form-select">
+                @foreach (var t in Model.Tenants.Where(t => t.IsActive))
+                {
+                    var shortDisplay = string.IsNullOrWhiteSpace(t.ShortName) ? $"#{t.Id}" : t.ShortName;
+                    <option value="@t.Id">@shortDisplay - @t.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label asp-for="MembershipInput.Role" class="form-label">Rol</label>
+            <select asp-for="MembershipInput.Role" class="form-select">
+                <option value="OWNER">OWNER</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="EDITOR">EDITOR</option>
+                <option value="VIEWER">VIEWER</option>
+            </select>
+        </div>
+        <div class="col-md-1 form-check mb-2">
+            <input asp-for="MembershipInput.IsActive" class="form-check-input" />
+            <label asp-for="MembershipInput.IsActive" class="form-check-label">Actief</label>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-primary">Toevoegen</button>
+        </div>
+    </form>
+</section>
+
+<section class="mb-4">
+    <h2 class="h5">Gebruikers</h2>
+    <div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>Naam</th>
+            <th>Actief</th>
+            <th>Globale admin</th>
+            <th class="text-end">Acties</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        @if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+                        {
+                            <img src="@user.AvatarUrl" alt="" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;" />
+                        }
+                        <span>@user.Email</span>
+                    </div>
+                </td>
+                <td>@(string.IsNullOrWhiteSpace($"{user.FirstName} {user.LastName}".Trim()) ? "-" : $"{user.FirstName} {user.LastName}".Trim())</td>
+                <td>
+                    <span class="badge @(user.IsActive ? "text-bg-success" : "text-bg-secondary")">@(user.IsActive ? "Actief" : "Inactief")</span>
+                </td>
+                <td>
+                    <span class="badge @(user.IsGlobalAdmin ? "text-bg-primary" : "text-bg-light text-dark")">@(user.IsGlobalAdmin ? "Ja" : "Nee")</span>
+                </td>
+                <td class="text-end">
+                    <button type="button"
+                            class="btn btn-outline-primary btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editGlobalUserModal-@user.Id">
+                        Bewerken
+                    </button>
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            data-bs-toggle="modal"
+                            data-bs-target="#resetGlobalPasswordModal-@user.Id">
+                        Wachtwoord
+                    </button>
+                    @if (!user.IsActive && !user.IsGlobalAdmin)
+                    {
+                        <details class="mt-2">
+                            <summary class="text-danger">Gebruiker en data definitief verwijderen</summary>
+                            <form method="post" asp-page-handler="PurgeUser" class="border rounded p-2 mt-2">
+                                <input type="hidden" name="PurgeUser.UserId" value="@user.Id" />
+                                <p class="small text-danger mb-2">
+                                    Verwijdert deze gebruiker, tenantlidmaatschappen, loginhistoriek en financiële data van deze gebruiker definitief.
+                                </p>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label small">Captcha: @GlobalAdminsModel.GetUserPurgeCaptchaQuestion(user.Id)</label>
+                                        <input name="PurgeUser.CaptchaAnswer" class="form-control form-control-sm" inputmode="numeric" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small">Typ @GlobalAdminsModel.GetUserPurgeConfirmationText(user.Id)</label>
+                                        <input name="PurgeUser.ConfirmationText" class="form-control form-control-sm" autocomplete="off" />
+                                    </div>
+                                    <div class="col-md-3 form-check mb-1">
+                                        <input name="PurgeUser.ConfirmDataLoss" value="true" class="form-check-input" type="checkbox" />
+                                        <label class="form-check-label small">Ik begrijp dat dit definitief is</label>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger"
+                                                data-confirm-title="Gebruiker definitief verwijderen"
+                                                data-confirm-message="Laatste bevestiging: deze gebruiker en zijn/haar data definitief verwijderen?">
+                                            Verwijderen
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </details>
+                    }
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+</section>
+
+@foreach (var user in Model.Users)
+{
+    <div class="modal fade" id="editGlobalUserModal-@user.Id" tabindex="-1" aria-labelledby="editGlobalUserModalLabel-@user.Id" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="UpdateUser">
+                    <input type="hidden" name="EditUser.UserId" value="@user.Id" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editGlobalUserModalLabel-@user.Id">Gebruiker bewerken</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">@user.Email</p>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Voornaam</label>
+                                <input name="EditUser.FirstName" value="@user.FirstName" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Naam</label>
+                                <input name="EditUser.LastName" value="@user.LastName" class="form-control" />
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Avatar URL</label>
+                                <input name="EditUser.AvatarUrl" value="@user.AvatarUrl" class="form-control" />
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input name="EditUser.IsGlobalAdmin" value="true" class="form-check-input" type="checkbox" checked="@user.IsGlobalAdmin" />
+                                    <label class="form-check-label">Globale admin</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check">
+                                    <input name="EditUser.IsActive" value="true" class="form-check-input" type="checkbox" checked="@user.IsActive" />
+                                    <label class="form-check-label">Actieve gebruiker</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary">Gebruiker opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="resetGlobalPasswordModal-@user.Id" tabindex="-1" aria-labelledby="resetGlobalPasswordModalLabel-@user.Id" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="ResetPassword">
+                    <input type="hidden" name="ResetPassword.UserId" value="@user.Id" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resetGlobalPasswordModalLabel-@user.Id">Wachtwoord resetten</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">@user.Email</p>
+                        <div class="mb-3">
+                            <label class="form-label">Nieuw wachtwoord</label>
+                            <input name="ResetPassword.NewPassword" type="password" class="form-control" autocomplete="new-password" minlength="8" required />
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Nieuw wachtwoord bevestigen</label>
+                            <input name="ResetPassword.ConfirmPassword" type="password" class="form-control" autocomplete="new-password" minlength="8" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary">Wachtwoord opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}

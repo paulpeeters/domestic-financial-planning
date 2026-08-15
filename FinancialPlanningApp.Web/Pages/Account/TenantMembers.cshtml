@@ -1,0 +1,330 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.TenantMembersModel
+@{
+    ViewData["Title"] = "Tenantleden";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 mb-3">
+    <div>
+        <h1>Tenantleden</h1>
+        <p class="text-muted mb-0">Beheer gebruikers en toegang voor de actieve tenant.</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addExistingUserModal">Bestaande gebruiker toevoegen</button>
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">Gebruiker maken</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#tenantInfoModal">Tenantinstellingen</button>
+    </div>
+</div>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<section class="mb-4">
+    <h2 class="h5">Huidige leden</h2>
+    <div class="table-responsive">
+        <table class="table table-sm table-striped align-middle">
+            <thead>
+            <tr>
+                <th>Email</th>
+                <th>Naam</th>
+                <th>Rol</th>
+                <th>Toegang</th>
+                <th class="text-end">Acties</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var member in Model.Members)
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (!string.IsNullOrWhiteSpace(member.AvatarUrl))
+                            {
+                                <img src="@member.AvatarUrl" alt="" class="rounded-circle" style="width: 28px; height: 28px; object-fit: cover;" />
+                            }
+                            <span>@member.Email</span>
+                        </div>
+                    </td>
+                    <td>@(string.IsNullOrWhiteSpace($"{member.FirstName} {member.LastName}".Trim()) ? "-" : $"{member.FirstName} {member.LastName}".Trim())</td>
+                    <td>@member.Role</td>
+                    <td>
+                        <span class="badge @(member.IsActive ? "text-bg-success" : "text-bg-secondary")">@(member.IsActive ? "Actief" : "Inactief")</span>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#editMemberModal-@member.UserId">Bewerken</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#resetTenantPasswordModal-@member.UserId">Wachtwoord</button>
+                        @if (member.IsActive)
+                        {
+                            <form method="post"
+                                  asp-page-handler="Remove"
+                                  class="d-inline"
+                                  data-confirm-title="Tenanttoegang verwijderen"
+                                  data-confirm-message="Toegang van deze gebruiker tot de actieve tenant verwijderen? De useraccount blijft bestaan.">
+                                <input type="hidden" name="RemoveUserId" value="@member.UserId" />
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Toegang verwijderen</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form method="post"
+                                  asp-page-handler="Update"
+                                  class="d-inline"
+                                  data-confirm-title="Tenanttoegang herstellen"
+                                  data-confirm-message="Toegang van deze gebruiker tot de actieve tenant herstellen?">
+                                <input type="hidden" name="UpdateInput.UserId" value="@member.UserId" />
+                                <input type="hidden" name="UpdateInput.Role" value="@member.Role" />
+                                <input type="hidden" name="UpdateInput.IsActive" value="true" />
+                                <input type="hidden" name="UpdateInput.FirstName" value="@member.FirstName" />
+                                <input type="hidden" name="UpdateInput.LastName" value="@member.LastName" />
+                                <input type="hidden" name="UpdateInput.AvatarUrl" value="@member.AvatarUrl" />
+                                <button type="submit" class="btn btn-outline-success btn-sm">Toegang herstellen</button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<div class="modal fade" id="tenantInfoModal" tabindex="-1" aria-labelledby="tenantInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="UpdateTenant">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tenantInfoModalLabel">Tenantinstellingen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label asp-for="TenantInput.Name" class="form-label">Volledige tenantnaam</label>
+                        <input asp-for="TenantInput.Name" class="form-control" />
+                    </div>
+                    <div class="mb-0">
+                        <label asp-for="TenantInput.ShortName" class="form-label">Korte tenantnaam (max 10)</label>
+                        <input asp-for="TenantInput.ShortName" class="form-control" maxlength="10" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary">Tenant opslaan</button>
+                </div>
+            </form>
+            <form method="post" asp-page-handler="UpdateProvisionSettings" class="border-top">
+                <div class="modal-body">
+                    <h6 class="mb-3">Maandelijkse provisie</h6>
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <label asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-label">Stortingsdag</label>
+                            <input asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-control" type="number" min="1" max="28" />
+                            <span asp-validation-for="ProvisionSettings.MonthlyProvisionDay" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-7">
+                            <label asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-label">Vast bedrag</label>
+                            <input asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-control" type="text" inputmode="decimal" data-val="false" placeholder="automatisch berekend" />
+                            <div class="form-text">Laat leeg om jaarplanning / 12 te gebruiken.</div>
+                            <span asp-validation-for="ProvisionSettings.MonthlyProvisionAmount" class="text-danger"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Provisie opslaan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addExistingUserModal" tabindex="-1" aria-labelledby="addExistingUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Add">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addExistingUserModalLabel">Bestaande gebruiker toevoegen</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body">
+                    @if (Model.UsersNotInTenant.Count == 0)
+                    {
+                        <div class="alert alert-info mb-0">Alle bestaande gebruikers zijn al gekoppeld aan deze tenant.</div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label asp-for="AddInput.Email" class="form-label">Gebruiker</label>
+                            <select asp-for="AddInput.Email" class="form-select">
+                                @foreach (var user in Model.UsersNotInTenant)
+                                {
+                                    <option value="@user.Email">@user.Email@(user.IsActive ? string.Empty : " (inactieve gebruiker)")</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="AddInput.Role" class="form-label">Rol</label>
+                            <select asp-for="AddInput.Role" class="form-select">
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    <option value="@role">@role</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input asp-for="AddInput.IsActive" class="form-check-input" />
+                            <label asp-for="AddInput.IsActive" class="form-check-label">Onmiddellijk actieve toegang geven</label>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary" disabled="@(Model.UsersNotInTenant.Count == 0)">Gebruiker toevoegen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="CreateUser">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createUserModalLabel">Gebruiker maken in deze tenant</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="CreateUserInputModel.Email" class="form-label">Email</label>
+                            <input asp-for="CreateUserInputModel.Email" class="form-control" autocomplete="email" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CreateUserInputModel.Password" class="form-label">Wachtwoord</label>
+                            <input asp-for="CreateUserInputModel.Password" class="form-control" autocomplete="new-password" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CreateUserInputModel.FirstName" class="form-label">Voornaam</label>
+                            <input asp-for="CreateUserInputModel.FirstName" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CreateUserInputModel.LastName" class="form-label">Naam</label>
+                            <input asp-for="CreateUserInputModel.LastName" class="form-control" />
+                        </div>
+                        <div class="col-md-12">
+                            <label asp-for="CreateUserInputModel.AvatarUrl" class="form-label">Avatar URL</label>
+                            <input asp-for="CreateUserInputModel.AvatarUrl" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CreateUserInputModel.Role" class="form-label">Rol</label>
+                            <select asp-for="CreateUserInputModel.Role" class="form-select">
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    <option value="@role">@role</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                <input asp-for="CreateUserInputModel.IsActive" class="form-check-input" />
+                                <label asp-for="CreateUserInputModel.IsActive" class="form-check-label">Onmiddellijk actieve toegang geven</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="submit" class="btn btn-primary">Gebruiker maken</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@foreach (var member in Model.Members)
+{
+    <div class="modal fade" id="editMemberModal-@member.UserId" tabindex="-1" aria-labelledby="editMemberModalLabel-@member.UserId" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="Update">
+                    <input type="hidden" name="UpdateInput.UserId" value="@member.UserId" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editMemberModalLabel-@member.UserId">Lid bewerken</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">@member.Email</p>
+                        <div class="mb-3">
+                            <label class="form-label">Voornaam</label>
+                            <input name="UpdateInput.FirstName" value="@member.FirstName" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Naam</label>
+                            <input name="UpdateInput.LastName" value="@member.LastName" class="form-control" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Avatar URL</label>
+                            <input name="UpdateInput.AvatarUrl" value="@member.AvatarUrl" class="form-control" />
+                            <div class="form-text">Opgeslagen als tenant-specifieke weergave voor dit lidmaatschap.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Rol</label>
+                            <select name="UpdateInput.Role" class="form-select">
+                                @foreach (var role in Model.AvailableRoles)
+                                {
+                                    if (string.Equals(role, member.Role, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        <option value="@role" selected>@role</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@role">@role</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                        <div class="form-check">
+                            <input name="UpdateInput.IsActive" value="true" class="form-check-input" type="checkbox" checked="@member.IsActive" />
+                            <label class="form-check-label">Actieve toegang</label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary">Lid opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="resetTenantPasswordModal-@member.UserId" tabindex="-1" aria-labelledby="resetTenantPasswordModalLabel-@member.UserId" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-page-handler="ResetPassword">
+                    <input type="hidden" name="ResetPassword.UserId" value="@member.UserId" />
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="resetTenantPasswordModalLabel-@member.UserId">Wachtwoord resetten</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">@member.Email</p>
+                        <div class="mb-3">
+                            <label class="form-label">Nieuw wachtwoord</label>
+                            <input name="ResetPassword.NewPassword" type="password" class="form-control" autocomplete="new-password" minlength="8" required />
+                        </div>
+                        <div class="mb-0">
+                            <label class="form-label">Nieuw wachtwoord bevestigen</label>
+                            <input name="ResetPassword.ConfirmPassword" type="password" class="form-control" autocomplete="new-password" minlength="8" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                        <button type="submit" class="btn btn-primary">Wachtwoord opslaan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,96 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reports.RecurringPaymentProvisionModel
+@{
+    ViewData["Title"] = "Provisie recurrente betalingen";
+    var months = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.AbbreviatedMonthNames.Take(12).ToArray();
+}
+
+<h2>Provisie recurrente betalingen</h2>
+
+<form method="get" class="row g-2 align-items-end mb-3">
+    <div class="col-sm-auto">
+        <label asp-for="Year" class="form-label">Jaar</label>
+        <input asp-for="Year" class="form-control" style="max-width: 140px;" />
+    </div>
+    <div class="col-sm-auto">
+        <label asp-for="ThresholdPercent" class="form-label">Toegestane afwijking (%)</label>
+        <input asp-for="ThresholdPercent" class="form-control" type="number" min="0" step="0.1" style="max-width: 180px;" />
+    </div>
+    <div class="col-sm-auto">
+        <label asp-for="EvaluationMode" class="form-label">Evaluatie</label>
+        <select asp-for="EvaluationMode" class="form-select" style="max-width: 240px;">
+            <option value="@RecurringPaymentProvisionModel.ProjectedYearEndMode">Prognose jaareinde</option>
+            <option value="@RecurringPaymentProvisionModel.YearToDateMode">Year-to-date pro-rata</option>
+        </select>
+    </div>
+    <div class="col-sm-auto">
+        <button type="submit" class="btn btn-outline-secondary">Laden</button>
+    </div>
+</form>
+
+<div class="mb-2 small">
+    Evaluatie: <strong>@Model.EvaluationLabel</strong>.
+    Groen betekent dat de verwachte uitgave meer dan @Model.ThresholdPercent.ToString("F1")% onder het geplande bedrag ligt.
+    Rood betekent dat de verwachte uitgave meer dan @Model.ThresholdPercent.ToString("F1")% boven het geplande bedrag ligt.
+    Verschil % volgt de gekozen evaluatiemodus.
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-sm align-middle">
+        <thead>
+            <tr>
+                <th>Recurrente betaling</th>
+                <th>Schema</th>
+                @foreach (var month in months)
+                {
+                    <th class="text-end">@month</th>
+                }
+                <th class="text-end">Gepland jaarlijks</th>
+                <th class="text-end">Betaald YTD</th>
+                <th class="text-end">Nog verwacht</th>
+                <th class="text-end">Verschil %</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            var rowClass = row.Status switch
+            {
+                RecurringPaymentProvisionModel.ProvisionStatus.UnderPlan => "table-success",
+                RecurringPaymentProvisionModel.ProvisionStatus.OverPlan => "table-danger",
+                _ => string.Empty
+            };
+            <tr class="@rowClass">
+                <td>@row.Description</td>
+                <td>@row.Schedule</td>
+                @for (var i = 0; i < 12; i++)
+                {
+                    var paid = row.PaidByMonth[i];
+                    var expected = row.ExpectedByMonth[i];
+                    <td class="text-end @(paid > 0m && !expected ? "text-danger fw-semibold" : null)">
+                        @(paid == 0m && !expected ? "-" : paid.ToString("F2"))
+                    </td>
+                }
+                <td class="text-end">@row.PlannedYearly.ToString("F2")</td>
+                <td class="text-end">@row.PaidToDate.ToString("F2")</td>
+                <td class="text-end">@row.FutureExpected.ToString("F2")</td>
+                <td class="text-end">@row.EvaluationDifferencePercent.ToString("F1")%</td>
+            </tr>
+        }
+        </tbody>
+        <tfoot>
+            <tr class="table-secondary fw-semibold">
+                <td>Totaal</td>
+                <td>-</td>
+                @for (var i = 0; i < 12; i++)
+                {
+                    <td class="text-end">@Model.Totals.PaidByMonth[i].ToString("F2")</td>
+                }
+                <td class="text-end">@Model.Totals.PlannedYearly.ToString("F2")</td>
+                <td class="text-end">@Model.Totals.PaidToDate.ToString("F2")</td>
+                <td class="text-end">@Model.Totals.FutureExpected.ToString("F2")</td>
+                <td class="text-end">@Model.Totals.EvaluationDifferencePercent.ToString("F1")%</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

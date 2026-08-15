@@ -1,0 +1,128 @@
+<script>
+    (() => {
+        const form = document.querySelector('[data-payment-form]');
+        if (!form) return;
+
+        const amountMode = form.querySelector('[data-amount-mode]');
+        const periodicity = form.querySelector('[data-periodicity]');
+        const fixedAmountField = form.querySelector('[data-fixed-amount-field]');
+        const monthlyProfileSection = form.querySelector('[data-monthly-profile-section]');
+        const paymentMonthField = form.querySelector('[data-payment-month-field]');
+        const customMonthsField = form.querySelector('[data-custom-months-field]');
+        const warning = form.querySelector('[data-conditional-warning]');
+        const paymentMonthsInput = form.querySelector('[data-payment-months-input]');
+        const paymentMonthCheckboxes = Array.from(form.querySelectorAll('[data-payment-month-checkbox]'));
+        const keywordInput = form.querySelector('[data-keywords-input]');
+        const keywordEntry = form.querySelector('[data-keyword-entry]');
+        const keywordAdd = form.querySelector('[data-keyword-add]');
+        const keywordTags = form.querySelector('[data-keyword-tags]');
+        const monthlyAmountInputs = Array.from(form.querySelectorAll('[data-monthly-profile-amount]'));
+        const monthlyTotal = form.querySelector('[data-monthly-profile-total]');
+
+        const fixedAmountInputs = fixedAmountField ? Array.from(fixedAmountField.querySelectorAll('input, select, textarea')) : [];
+        const monthlyProfileInputs = monthlyProfileSection ? Array.from(monthlyProfileSection.querySelectorAll('input, select, textarea')) : [];
+        const paymentMonthInputs = paymentMonthField ? Array.from(paymentMonthField.querySelectorAll('input, select, textarea')) : [];
+        const customMonthsInputs = customMonthsField ? Array.from(customMonthsField.querySelectorAll('input, select, textarea')) : [];
+
+        const monthlyProfileMode = '@FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.MonthlyProfileAmountMode';
+        const customMonthsPeriodicity = '@FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.CustomMonthsYearlyBudget';
+
+        const setVisible = (container, inputs, visible) => {
+            if (!container) return;
+            container.hidden = !visible;
+            inputs.forEach(input => input.disabled = !visible);
+        };
+
+        const syncPaymentMonths = () => {
+            if (!paymentMonthsInput) return;
+            paymentMonthsInput.value = paymentMonthCheckboxes
+                .filter(input => input.checked)
+                .map(input => input.value)
+                .join(',');
+        };
+
+        const parseDecimal = value => {
+            const normalized = (value ?? '').toString().trim().replace(',', '.');
+            const parsed = Number.parseFloat(normalized);
+            return Number.isFinite(parsed) ? parsed : 0;
+        };
+
+        const formatCurrency = value => new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(value);
+
+        const syncMonthlyTotal = () => {
+            if (!monthlyTotal) return;
+            const total = monthlyAmountInputs.reduce((sum, input) => sum + parseDecimal(input.value), 0);
+            monthlyTotal.textContent = formatCurrency(total);
+        };
+
+        const getKeywords = () => (keywordInput?.value ?? '')
+            .split(',')
+            .map(value => value.trim())
+            .filter(Boolean);
+
+        const setKeywords = keywords => {
+            if (!keywordInput || !keywordTags) return;
+            const unique = [...new Set(keywords)];
+            keywordInput.value = unique.join(', ');
+            keywordTags.innerHTML = '';
+
+            unique.forEach(keyword => {
+                const tag = document.createElement('button');
+                tag.type = 'button';
+                tag.className = 'btn btn-sm btn-outline-secondary keyword-tag';
+                tag.textContent = `${keyword} x`;
+                tag.addEventListener('click', () => setKeywords(getKeywords().filter(value => value !== keyword)));
+                keywordTags.appendChild(tag);
+            });
+        };
+
+        const addKeyword = () => {
+            const raw = keywordEntry?.value ?? '';
+            const additions = raw.split(',').map(value => value.trim()).filter(Boolean);
+            if (additions.length === 0) return;
+            setKeywords([...getKeywords(), ...additions]);
+            keywordEntry.value = '';
+        };
+
+        const sync = () => {
+            const usesMonthlyProfile = amountMode?.value === monthlyProfileMode;
+            if (usesMonthlyProfile && periodicity) {
+                periodicity.value = 'Monthly';
+            }
+
+            const usesCustomMonths = periodicity?.value === customMonthsPeriodicity;
+            const usesPaymentMonth = !usesMonthlyProfile && !usesCustomMonths && periodicity?.value !== 'Monthly';
+
+            if (periodicity) {
+                periodicity.disabled = usesMonthlyProfile;
+            }
+
+            setVisible(fixedAmountField, fixedAmountInputs, !usesMonthlyProfile);
+            setVisible(monthlyProfileSection, monthlyProfileInputs, usesMonthlyProfile);
+            setVisible(customMonthsField, customMonthsInputs, !usesMonthlyProfile && usesCustomMonths);
+            setVisible(paymentMonthField, paymentMonthInputs, usesPaymentMonth);
+
+            if (warning && (amountMode?.value !== amountMode?.dataset.initialValue || periodicity?.value !== periodicity?.dataset.initialValue)) {
+                warning.hidden = false;
+            }
+
+            syncPaymentMonths();
+            syncMonthlyTotal();
+        };
+
+        paymentMonthCheckboxes.forEach(input => input.addEventListener('change', syncPaymentMonths));
+        monthlyAmountInputs.forEach(input => input.addEventListener('input', syncMonthlyTotal));
+        keywordAdd?.addEventListener('click', addKeyword);
+        keywordEntry?.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ',') {
+                event.preventDefault();
+                addKeyword();
+            }
+        });
+
+        amountMode?.addEventListener('change', sync);
+        periodicity?.addEventListener('change', sync);
+        setKeywords(getKeywords());
+        sync();
+    })();
+</script>

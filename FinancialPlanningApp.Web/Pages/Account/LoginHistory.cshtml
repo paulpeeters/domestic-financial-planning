@@ -1,0 +1,67 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.LoginHistoryModel
+@{
+    ViewData["Title"] = "Loginhistoriek";
+}
+
+<h1>Loginhistoriek</h1>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <label asp-for="FromUtc" class="form-label">Van (UTC)</label>
+        <input asp-for="FromUtc" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label asp-for="ToUtc" class="form-label">Tot (UTC)</label>
+        <input asp-for="ToUtc" class="form-control" />
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Email" class="form-label">Email</label>
+        <input asp-for="Email" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label asp-for="IsSuccess" class="form-label">Resultaat</label>
+        <select asp-for="IsSuccess" class="form-select">
+            <option value="">Alle</option>
+            <option value="true">Succes</option>
+            <option value="false">Fout</option>
+        </select>
+    </div>
+    <div class="col-md-1">
+        <label asp-for="Limit" class="form-label">Limit</label>
+        <input asp-for="Limit" class="form-control" />
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-primary">Filteren</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+        <tr>
+            <th>Poging UTC</th>
+            <th>Email</th>
+            <th>UserId</th>
+            <th>Succes</th>
+            <th>Foutreden</th>
+            <th>IP</th>
+            <th>User Agent</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var a in Model.Attempts)
+        {
+            <tr>
+                <td>@a.AttemptedUtc.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                <td>@a.Email</td>
+                <td>@a.UserId</td>
+                <td>@(a.IsSuccess ? "Ja" : "Nee")</td>
+                <td>@a.FailureReason</td>
+                <td>@a.IpAddress</td>
+                <td style="max-width:420px;white-space:normal;word-break:break-all;">@a.UserAgent</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

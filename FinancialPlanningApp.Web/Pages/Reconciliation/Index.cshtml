@@ -1,0 +1,95 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reconciliation.IndexModel
+@{
+    ViewData["Title"] = "Reconciliatie";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-2 mb-3">
+    <div>
+        <h2 class="mb-1">Reconciliatie</h2>
+        <p class="text-muted mb-0">Controleer geimporteerde of manueel ingevoerde verrichtingen en wijs ze toe.</p>
+    </div>
+    <a asp-page="/Reconciliation/Manual" class="btn btn-outline-primary">Manueel afpunten</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <label asp-for="Year" class="form-label">Jaar</label>
+        <input asp-for="Year" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label asp-for="Month" class="form-label">Maand</label>
+        <select asp-for="Month" class="form-select">
+            <option value="">Alle</option>
+            @for (var m = 1; m <= 12; m++)
+            {
+                <option value="@m">@m</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label asp-for="Search" class="form-label">Omschrijving / gemapte betaling</label>
+        <input asp-for="Search" class="form-control" placeholder="bv. netflix, water, keyword" />
+    </div>
+    <div class="col-md-3 form-check mt-4 ms-3">
+        <input asp-for="OnlyUnmapped" class="form-check-input" />
+        <label asp-for="OnlyUnmapped" class="form-check-label">Alleen ongemapt</label>
+    </div>
+    <div class="col-md-2 mt-4">
+        <button type="submit" class="btn btn-outline-secondary">Filteren</button>
+    </div>
+</form>
+
+<table class="table table-sm table-striped align-middle">
+    <thead>
+        <tr>
+            <th>Datum</th>
+            <th>Omschrijving</th>
+            <th>Bedrag</th>
+            <th style="width: 120px;">Bron</th>
+            <th>Gemapt</th>
+            <th>Mappen naar</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.ExecutionDate.ToString("yyyy-MM-dd")</td>
+            <td>
+                <div>@row.Description</div>
+                @if (!string.IsNullOrWhiteSpace(row.DescriptionDetails))
+                {
+                    <div class="text-muted small">@row.DescriptionDetails</div>
+                }
+            </td>
+            <td>@row.Amount.ToString("F2")</td>
+            <td><span class="badge text-bg-light">@row.SourceDisplay</span></td>
+            <td>@(row.MappedDisplay ?? "-")</td>
+            <td>
+                <form method="post" asp-page-handler="Map">
+                    <input type="hidden" name="Year" value="@Model.Year" />
+                    <input type="hidden" name="Month" value="@Model.Month" />
+                    <input type="hidden" name="OnlyUnmapped" value="@(Model.OnlyUnmapped.ToString().ToLowerInvariant())" />
+                    <input type="hidden" name="Search" value="@Model.Search" />
+                    <input type="hidden" name="ExecutionId" value="@row.ExecutionId" />
+                    <select name="OptionValue" class="form-select form-select-sm">
+                        @foreach (var o in row.Options)
+                        {
+                            <option value="@o.Value" selected="@(row.SelectedOptionValue == o.Value ? "selected" : null)">@o.Label</option>
+                        }
+                    </select>
+                    <div class="d-flex gap-2 mt-1 align-items-center">
+                        <input type="number" name="mapYear" class="form-control form-control-sm" style="width:90px;" value="@(row.MappedPeriodYear ?? row.SuggestedMappedPeriodYear ?? row.ExecutionDate.Year)" min="2000" max="2100" />
+                        <input type="number" name="mapMonth" class="form-control form-control-sm" style="width:70px;" value="@(row.MappedPeriodMonth ?? row.SuggestedMappedPeriodMonth ?? row.ExecutionDate.Month)" min="1" max="12" />
+                        <button type="submit" class="btn btn-sm btn-primary">Mappen</button>
+                        <button type="submit" class="btn btn-sm btn-outline-danger" asp-page-handler="Unmap" disabled="@(!row.IsMapped ? "disabled" : null)">Ontmappen</button>
+                    </div>
+                </form>
+            </td>
+            <td></td>
+        </tr>
+    }
+    </tbody>
+</table>

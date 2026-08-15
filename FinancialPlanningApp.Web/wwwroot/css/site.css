@@ -1,0 +1,145 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+  overflow-x: hidden;
+}
+
+.navbar-brand {
+  max-width: calc(100vw - 5rem);
+}
+
+.navbar-collapse .dropdown-menu {
+  min-width: max-content;
+  max-width: min(92vw, 24rem);
+}
+
+.navbar-collapse .dropdown-item {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+.navbar-collapse .nav-link {
+  overflow-wrap: anywhere;
+}
+
+.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
+  color: var(--bs-secondary-color);
+  text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+  text-align: start;
+}
+
+.payment-form-section {
+  border: 1px solid var(--bs-border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.payment-form-section h5 {
+  margin-bottom: 1rem;
+}
+
+.drag-handle {
+  cursor: grab;
+  font-weight: 700;
+  letter-spacing: 0.08rem;
+}
+
+.reorder-controls {
+  width: 8rem;
+  white-space: nowrap;
+}
+
+.reorder-controls .btn {
+  min-width: 2rem;
+}
+
+tr.dragging {
+  opacity: 0.55;
+}
+
+tr:target {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+.payments-table th,
+.payments-table td {
+  vertical-align: middle;
+}
+
+.payments-table th {
+  white-space: nowrap;
+}
+
+.payments-description {
+  min-width: 8rem;
+}
+
+.payments-periodicity {
+  max-width: 9rem;
+}
+
+.payments-schedule {
+  min-width: 7rem;
+  max-width: 11rem;
+}
+
+.payments-method {
+  white-space: nowrap;
+}
+
+.month-button-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.month-button-grid .btn {
+  min-width: 0;
+}
+
+.keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.keyword-tag {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.monthly-profile-table th,
+.monthly-profile-table td {
+  min-width: 6rem;
+}
+
+@media (max-width: 575.98px) {
+  .month-button-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

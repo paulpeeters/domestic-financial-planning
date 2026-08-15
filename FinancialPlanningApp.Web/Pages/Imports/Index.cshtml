@@ -1,0 +1,140 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Imports.IndexModel
+@{
+    ViewData["Title"] = "Bankimports";
+}
+
+<h2>Bankimport</h2>
+<p class="text-muted">Stap 1: uploaden en previewen. Stap 2: bevestigen om op te slaan.</p>
+
+<form method="post" enctype="multipart/form-data" asp-page-handler="Preview" class="mt-3">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="row g-3">
+        <div class="col-md-5">
+            <label asp-for="Input.ProviderKey" class="form-label"></label>
+            <select asp-for="Input.ProviderKey" asp-items="Model.ProviderOptions" class="form-select"></select>
+        </div>
+        <div class="col-md-7">
+            <label asp-for="Input.Files" class="form-label"></label>
+            <input asp-for="Input.Files" class="form-control" multiple />
+            <span asp-validation-for="Input.Files" class="text-danger"></span>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-outline-primary mt-3">Import previewen</button>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(Model.PreviewMessage))
+{
+    <div class="alert alert-secondary mt-3">
+        @Model.PreviewMessage
+    </div>
+}
+
+@if (Model.PreviewTransactions.Count > 0)
+{
+    <div class="mt-4">
+        <h4>Preview (@Model.PreviewTransactions.Count transacties getoond)</h4>
+        <div class="alert alert-light border">
+            Debets: <strong>@Model.PreviewDebitCount</strong> (som <strong>@Model.PreviewDebitSum.ToString("F2")</strong>) |
+            Credits/Terugbetalingen: <strong>@Model.PreviewCreditCount</strong> (som <strong>@Model.PreviewCreditSum.ToString("F2")</strong>)
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-striped">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Type</th>
+                        <th>Omschrijving</th>
+                        <th>Bedrag</th>
+                        <th>Methode</th>
+                        <th>Referentie</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var tx in Model.PreviewTransactions)
+                {
+                    <tr class="@(tx.IsInformational ? "table-warning" : "")">
+                        <td>@tx.ExecutionDate.ToString("yyyy-MM-dd")</td>
+                        <td>@(tx.IsInformational ? tx.InfoType : "TRANSACTION")</td>
+                        <td>@tx.Description</td>
+                        <td>@tx.Amount.ToString("F2")</td>
+                        <td>@tx.PaymentMethod</td>
+                        <td>@tx.SourceReference</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+        <form method="post" asp-page-handler="Confirm" class="mt-3">
+            <input type="hidden" asp-for="ConfirmInput.ProviderKey" />
+            <input type="hidden" asp-for="ConfirmInput.FileName" />
+            <input type="hidden" asp-for="ConfirmInput.PayloadJson" />
+            <button type="submit" class="btn btn-primary">Import bevestigen</button>
+        </form>
+    </div>
+}
+
+@if (Model.Result is not null)
+{
+    <div class="alert alert-info mt-4">
+        Geimporteerd: <strong>@Model.Result.ImportedCount</strong> |
+        Duplicaten: <strong>@Model.Result.DuplicateCount</strong> |
+        Duplicaten zelfde bron: <strong>@Model.Result.SameSourceDuplicateCount</strong> |
+        Duplicaten andere bron: <strong>@Model.Result.CrossSourceDuplicateCount</strong> |
+        Ongeldig: <strong>@Model.Result.InvalidCount</strong> |
+        Insertfouten: <strong>@Model.Result.InsertErrorCount</strong> |
+        Totaal overgeslagen: <strong>@Model.Result.SkippedCount</strong>
+    </div>
+
+    @if (Model.Result.Warnings.Count > 0)
+    {
+        <div class="alert alert-warning">
+            <strong>Waarschuwingen</strong>
+            <ul class="mb-0">
+            @foreach (var warning in Model.Result.Warnings.Take(10))
+            {
+                <li>@warning</li>
+            }
+            </ul>
+        </div>
+    }
+
+    @if (Model.Result.DuplicateDetails.Count > 0)
+    {
+        <div class="mt-3">
+            <h5>Duplicaatdetails (@Model.Result.DuplicateDetails.Count)</h5>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered align-middle">
+                    <thead>
+                        <tr>
+                            <th>Reden</th>
+                            <th>Inkomend</th>
+                            <th>Gematcht bestaand</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var d in Model.Result.DuplicateDetails.Take(100))
+                    {
+                        <tr>
+                            <td>@d.Reason</td>
+                            <td>
+                                <div><strong>@d.IncomingDate.ToString("yyyy-MM-dd")</strong> | @d.IncomingAmount.ToString("F2")</div>
+                                <div>@d.IncomingSourceType</div>
+                                <div class="text-muted small">@d.IncomingDescription</div>
+                                <div class="text-muted small">@d.IncomingSourceReference</div>
+                            </td>
+                            <td>
+                                <div><strong>ID @d.ExistingId</strong> | @d.ExistingDate.ToString("yyyy-MM-dd") | @d.ExistingAmount.ToString("F2")</div>
+                                <div>@d.ExistingSourceType</div>
+                                <div class="text-muted small">@d.ExistingDescription</div>
+                                <div class="text-muted small">@d.ExistingSourceReference</div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}

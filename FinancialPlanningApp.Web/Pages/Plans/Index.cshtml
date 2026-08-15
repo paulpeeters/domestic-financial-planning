@@ -1,0 +1,15 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Plans.IndexModel
+@{
+    ViewData["Title"] = "Annual Plan";
+}
+
+<h2>Annual Plan</h2>
+
+<div class="card">
+    <div class="card-body">
+        <p><strong>Expected yearly cost:</strong> @Model.Summary.ExpectedYearlyCost.ToString("C")</p>
+        <p><strong>Expected monthly cost:</strong> @Model.Summary.ExpectedMonthlyCost.ToString("C")</p>
+        <p><strong>Suggested monthly transfer:</strong> @Model.Summary.SuggestedMonthlyTransfer.ToString("C")</p>
+    </div>
+</div>

@@ -1,0 +1,160 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reports.MonthlyCostVarianceModel
+@{
+    ViewData["Title"] = "Maandelijkse kostenafwijking";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-2 mb-3">
+    <div>
+        <h1 class="h2 mb-1">Maandelijkse kostenafwijking</h1>
+        <p class="text-muted mb-0">Verwachte recurrente kosten versus gemapte betaalde kosten. Kaartafrekeningen worden uitgesloten om dubbele telling van kaarttransacties te vermijden.</p>
+    </div>
+    <a class="btn btn-outline-secondary" asp-page="/Reconciliation/Index" asp-route-Year="@Model.Year" asp-route-Month="@Model.Month" asp-route-OnlyUnmapped="false">Reconciliatie openen</a>
+</div>
+
+<form method="get" class="row g-3 mb-3">
+    <div class="col-md-2">
+        <label asp-for="Year" class="form-label">Jaar</label>
+        <input asp-for="Year" class="form-control" />
+    </div>
+    <div class="col-md-2">
+        <label asp-for="Month" class="form-label">Maand</label>
+        <input asp-for="Month" class="form-control" min="1" max="12" />
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-outline-secondary">Laden</button>
+    </div>
+</form>
+
+@if (!Model.HasMappedPaymentsForMonth)
+{
+    <div class="alert @(Model.IsCurrentOrFutureMonth ? "alert-info" : "alert-warning")" role="alert">
+        Er zijn geen gemapte betalingen gevonden voor @Model.Year-@Model.Month.ToString("00"). Verwachte kosten worden wel getoond, maar betaalde kosten blijven nul tot de uittreksels voor deze maand geimporteerd en gereconcilieerd zijn.
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Verwachte kosten</div>
+                <div class="display-6">@Model.Totals.ExpectedAmount.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Betaalde kosten</div>
+                <div class="display-6">@Model.Totals.PaidAmount.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Vermoedelijk betaald</div>
+                <div class="display-6">@Model.Totals.PresumedPaidAmount.ToString("C")</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="text-muted small text-uppercase fw-semibold">Verschil</div>
+                <div class="display-6 @(Model.Totals.DifferenceWithPresumed > 0 ? "text-danger" : Model.Totals.DifferenceWithPresumed < 0 ? "text-success" : null)">
+                    @Model.Totals.DifferenceWithPresumed.ToString("+0.00;-0.00;0.00")
+                </div>
+                <div class="text-muted small">Met vermoedelijke betalingen</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-sm table-striped align-middle">
+        <thead>
+            <tr>
+                <th>Oorzaak</th>
+                <th>Schema</th>
+                <th>Status</th>
+                <th class="text-end">Verwacht</th>
+                <th class="text-end">Betaald</th>
+                <th class="text-end">Vermoedelijk</th>
+                <th class="text-end">Verschil</th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var row in Model.Rows)
+        {
+            var rowId = $"row-{row.TemplateId?.ToString() ?? Guid.NewGuid().ToString("N")}";
+            <tr>
+                <td>
+                    @if (row.Transactions.Count > 0 || row.PresumedPayments.Count > 0)
+                    {
+                        <button class="btn btn-sm btn-outline-secondary me-1" type="button" data-bs-toggle="collapse" data-bs-target="#@rowId" aria-expanded="false" aria-controls="@rowId">+</button>
+                    }
+                    @row.Description
+                </td>
+                <td>@row.Schedule</td>
+                <td>@row.Status</td>
+                <td class="text-end">@row.ExpectedAmount.ToString("C")</td>
+                <td class="text-end">@row.PaidAmount.ToString("C")</td>
+                <td class="text-end">@(row.PresumedPaidAmount > 0m ? row.PresumedPaidAmount.ToString("C") : "-")</td>
+                <td class="text-end @(row.DifferenceWithPresumed > 0 ? "text-danger" : row.DifferenceWithPresumed < 0 ? "text-success" : null)">
+                    @row.DifferenceWithPresumed.ToString("+0.00;-0.00;0.00")
+                </td>
+            </tr>
+            @if (row.Transactions.Count > 0 || row.PresumedPayments.Count > 0)
+            {
+                <tr class="collapse" id="@rowId">
+                    <td colspan="7" class="bg-light">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Datum</th>
+                                    <th>Omschrijving</th>
+                                    <th>Type</th>
+                                    <th>Methode</th>
+                                    <th class="text-end">Bedrag</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            @foreach (var pending in row.PresumedPayments)
+                            {
+                                <tr>
+                                    <td>@pending.DueDate.ToString("yyyy-MM-dd")</td>
+                                    <td>Vermoedelijke betaling voor @pending.ReportingYear-@pending.ReportingMonth.ToString("00")</td>
+                                    <td>Vermoedelijk</td>
+                                    <td>@pending.PaymentMethod</td>
+                                    <td class="text-end">@pending.Amount.ToString("C")</td>
+                                </tr>
+                            }
+                            @foreach (var tx in row.Transactions)
+                            {
+                                <tr>
+                                    <td>@tx.ExecutionDate.ToString("yyyy-MM-dd")</td>
+                                    <td>@tx.Description</td>
+                                    <td>@tx.ExecutionType</td>
+                                    <td>@tx.PaymentMethod</td>
+                                    <td class="text-end">@tx.Amount.ToString("C")</td>
+                                </tr>
+                            }
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            }
+        }
+        </tbody>
+        <tfoot>
+            <tr class="table-secondary fw-semibold">
+                <td colspan="3">Totaal @Model.Year-@Model.Month.ToString("00")</td>
+                <td class="text-end">@Model.Totals.ExpectedAmount.ToString("C")</td>
+                <td class="text-end">@Model.Totals.PaidAmount.ToString("C")</td>
+                <td class="text-end">@Model.Totals.PresumedPaidAmount.ToString("C")</td>
+                <td class="text-end">@Model.Totals.DifferenceWithPresumed.ToString("+0.00;-0.00;0.00")</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

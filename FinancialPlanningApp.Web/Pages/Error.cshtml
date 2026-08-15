@@ -1,0 +1,26 @@
+﻿@page
+@model ErrorModel
+@{
+    ViewData["Title"] = "Fout";
+}
+
+<h1 class="text-danger">Fout.</h1>
+<h2 class="text-danger">Er is een fout opgetreden bij het verwerken van je request.</h2>
+
+@if (Model.ShowRequestId)
+{
+    <p>
+        <strong>Request-ID:</strong> <code>@Model.RequestId</code>
+    </p>
+}
+
+<h3>Development-modus</h3>
+<p>
+    Overschakelen naar de <strong>Development</strong>-omgeving toont gedetailleerde informatie over de fout.
+</p>
+<p>
+    <strong>De Development-omgeving mag niet ingeschakeld zijn voor gedeployde applicaties.</strong>
+    Dit kan gevoelige informatie uit exceptions tonen aan eindgebruikers.
+    Voor lokale debugging schakel je de <strong>Development</strong>-omgeving in door de omgevingsvariabele <strong>ASPNETCORE_ENVIRONMENT</strong> op <strong>Development</strong> te zetten
+    en de app opnieuw te starten.
+</p>

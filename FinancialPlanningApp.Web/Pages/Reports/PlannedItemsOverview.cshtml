@@ -1,0 +1,55 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reports.PlannedItemsOverviewModel
+@{
+    ViewData["Title"] = "Overzicht geplande posten";
+}
+
+<h2>Overzicht geplande posten</h2>
+
+<form method="get" class="mb-3">
+    <label asp-for="Year" class="form-label">Jaar</label>
+    <input asp-for="Year" class="form-control" style="max-width: 200px;" />
+    <button type="submit" class="btn btn-outline-secondary mt-2">Laden</button>
+</form>
+
+<table class="table table-striped table-sm">
+    <thead>
+        <tr>
+            <th>Categorie</th>
+            <th>Geplande dag/maanden</th>
+            <th>Gepland maandelijks</th>
+            <th>Werkelijk maandelijks</th>
+            <th>Gepland jaarlijks</th>
+            <th>Werkelijk jaarlijks</th>
+            <th>Werkelijk vorig jaar</th>
+            <th>Verschil (+/-)</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var row in Model.Rows)
+    {
+        <tr>
+            <td>@row.Category</td>
+            <td>@row.PlannedSchedule</td>
+            <td>@row.PlannedMonthly.ToString("F2")</td>
+            <td>@row.ActualMonthly.ToString("F2")</td>
+            <td>@row.PlannedYearly.ToString("F2")</td>
+            <td>@row.ActualYearly.ToString("F2")</td>
+            <td>@row.ActualPreviousYear.ToString("F2")</td>
+            <td>@row.Difference.ToString("F2")</td>
+        </tr>
+    }
+    </tbody>
+    <tfoot>
+        <tr class="table-secondary fw-semibold">
+            <td>Totaal</td>
+            <td>-</td>
+            <td>@Model.Totals.PlannedMonthly.ToString("F2")</td>
+            <td>@Model.Totals.ActualMonthly.ToString("F2")</td>
+            <td>@Model.Totals.PlannedYearly.ToString("F2")</td>
+            <td>@Model.Totals.ActualYearly.ToString("F2")</td>
+            <td>@Model.Totals.ActualPreviousYear.ToString("F2")</td>
+            <td>@Model.Totals.Difference.ToString("F2")</td>
+        </tr>
+    </tfoot>
+</table>

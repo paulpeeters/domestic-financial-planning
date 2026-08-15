@@ -1,0 +1,192 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Payments.IndexModel
+@{
+    ViewData["Title"] = "Recurrente betalingen";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Recurrente betalingen</h2>
+    <div class="d-flex gap-2">
+        @if (Model.Reorder)
+        {
+            <a asp-page="Index" asp-route-IncludeInactive="true" class="btn btn-outline-secondary">Normale weergave</a>
+        }
+        else
+        {
+            <a asp-page="Index" asp-route-Reorder="true" class="btn btn-outline-secondary">Volgorde wijzigen</a>
+            <a asp-page="Create" class="btn btn-primary">Template toevoegen</a>
+        }
+    </div>
+</div>
+
+@if (Model.Reorder)
+{
+    <div class="alert alert-info">
+        Versleep de rijen naar de gewenste volgorde. Verborgen templates staan mee in de lijst zodat de volgorde volledig blijft.
+    </div>
+    <form method="post" asp-page-handler="SaveOrder" class="mb-3">
+        <input asp-for="OrderedIds" type="hidden" id="orderedIds" value="@string.Join(",", Model.Items.Select(i => i.Id))" />
+        <button type="submit" class="btn btn-primary">Volgorde opslaan</button>
+        <a asp-page="Index" asp-route-IncludeInactive="true" class="btn btn-outline-secondary">Annuleren</a>
+    </form>
+}
+else
+{
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-5">
+            <input asp-for="Search" class="form-control" placeholder="Omschrijving zoeken" />
+        </div>
+        <div class="col-md-3 form-check mt-2">
+            <input asp-for="IncludeInactive" class="form-check-input" />
+            <label asp-for="IncludeInactive" class="form-check-label">Gearchiveerde opnemen</label>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-outline-secondary">Filteren</button>
+        </div>
+    </form>
+}
+
+<table class="table table-striped align-middle payments-table">
+    <thead>
+        <tr>
+            @if (Model.Reorder)
+            {
+                <th class="w-auto"></th>
+            }
+            <th>Omschrijving</th>
+            <th>Periodiciteit</th>
+            <th>Verwachte betaling</th>
+            <th>Methode</th>
+            <th>Bedrag</th>
+            <th>Per maand</th>
+            <th>Geldigheid</th>
+            <th>Overzicht</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody id="sortablePayments">
+    @foreach (var item in Model.Items)
+    {
+        var navIndex = Model.NavigationIndexes.TryGetValue(item.Id, out var index) ? index : 0;
+        <tr id="payment-@item.Id" draggable="@(Model.Reorder ? "true" : "false")" data-id="@item.Id">
+            @if (Model.Reorder)
+            {
+                <td class="reorder-controls">
+                    <span class="text-muted drag-handle" title="Verslepen">::</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-move-up aria-label="@($"{item.Description} omhoog")">&uarr;</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-move-down aria-label="@($"{item.Description} omlaag")">&darr;</button>
+                </td>
+            }
+            <td class="payments-description">@item.Description</td>
+            <td class="payments-periodicity">@FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.FormatPeriodicity(item.Periodicity)</td>
+            <td class="payments-schedule">@IndexModel.FormatPaymentSchedule(item)</td>
+            <td class="payments-method">@IndexModel.FormatPaymentMethod(item.PaymentMethod)</td>
+            <td class="text-nowrap">@item.Amount.ToString("C")</td>
+            <td class="text-nowrap">@item.NormalizedMonthlyAmount.ToString("C")</td>
+            <td>@IndexModel.FormatValidity(item)</td>
+            <td>@(item.IsActive ? "Zichtbaar" : "Verborgen")</td>
+            <td class="text-nowrap">
+                @if (!Model.Reorder)
+                {
+                    <a asp-page="Edit" asp-route-id="@item.Id" asp-route-NavKey="@Model.NavKey" asp-route-NavIndex="@navIndex" class="btn btn-sm btn-outline-primary">Bewerken</a>
+                    <a asp-page="Create" asp-route-SourceId="@item.Id" class="btn btn-sm btn-outline-secondary">Kopieren</a>
+                    @if (IndexModel.HasEnded(item))
+                    {
+                        <a asp-page="Create" asp-route-SourceId="@item.Id" asp-route-Restart="true" class="btn btn-sm btn-outline-success">Herstarten</a>
+                    }
+                    @if (item.IsActive)
+                    {
+                        <form method="post" asp-page-handler="Archive" asp-route-id="@item.Id" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-warning">Verbergen</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form method="post" asp-page-handler="Activate" asp-route-id="@item.Id" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Weergeven</button>
+                        </form>
+                    }
+                    <form method="post" asp-page-handler="Delete" asp-route-id="@item.Id" class="d-inline" data-confirm-message="Deze betalingstemplate verwijderen?">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Verwijderen</button>
+                    </form>
+                }
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+
+@if (!Model.Reorder)
+{
+    <nav>
+        <ul class="pagination">
+            <li class="page-item @(Model.PageNumber <= 1 ? "disabled" : "")">
+                <a class="page-link" asp-page="/Payments/Index" asp-route-Search="@Model.Search" asp-route-IncludeInactive="@Model.IncludeInactive" asp-route-PageNumber="@(Model.PageNumber - 1)">Vorige</a>
+            </li>
+            <li class="page-item disabled"><span class="page-link">Pagina @Model.PageNumber van @Model.TotalPages</span></li>
+            <li class="page-item @(Model.PageNumber >= Model.TotalPages ? "disabled" : "")">
+                <a class="page-link" asp-page="/Payments/Index" asp-route-Search="@Model.Search" asp-route-IncludeInactive="@Model.IncludeInactive" asp-route-PageNumber="@(Model.PageNumber + 1)">Volgende</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@section Scripts {
+    @if (Model.Reorder)
+    {
+        <script>
+            (() => {
+                const tableBody = document.getElementById('sortablePayments');
+                const orderedIds = document.getElementById('orderedIds');
+                let draggedRow = null;
+
+                const syncOrder = () => {
+                    orderedIds.value = Array.from(tableBody.querySelectorAll('tr[data-id]'))
+                        .map(row => row.dataset.id)
+                        .join(',');
+                };
+
+                tableBody.addEventListener('click', event => {
+                    const button = event.target.closest('[data-move-up], [data-move-down]');
+                    if (!button) return;
+
+                    const row = button.closest('tr[data-id]');
+                    if (!row) return;
+
+                    if (button.matches('[data-move-up]') && row.previousElementSibling) {
+                        tableBody.insertBefore(row, row.previousElementSibling);
+                    }
+
+                    if (button.matches('[data-move-down]') && row.nextElementSibling) {
+                        tableBody.insertBefore(row.nextElementSibling, row);
+                    }
+
+                    syncOrder();
+                });
+
+                tableBody.addEventListener('dragstart', event => {
+                    draggedRow = event.target.closest('tr[data-id]');
+                    if (!draggedRow) return;
+                    draggedRow.classList.add('dragging');
+                    event.dataTransfer.effectAllowed = 'move';
+                });
+
+                tableBody.addEventListener('dragend', () => {
+                    draggedRow?.classList.remove('dragging');
+                    draggedRow = null;
+                    syncOrder();
+                });
+
+                tableBody.addEventListener('dragover', event => {
+                    event.preventDefault();
+                    if (!draggedRow) return;
+
+                    const rows = Array.from(tableBody.querySelectorAll('tr[data-id]:not(.dragging)'));
+                    const afterRow = rows.find(row => event.clientY < row.getBoundingClientRect().top + row.offsetHeight / 2);
+                    tableBody.insertBefore(draggedRow, afterRow ?? null);
+                    syncOrder();
+                });
+            })();
+        </script>
+    }
+}

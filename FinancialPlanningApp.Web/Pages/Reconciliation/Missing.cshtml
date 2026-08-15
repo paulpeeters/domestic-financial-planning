@@ -1,0 +1,60 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reconciliation.MissingModel
+@{
+    ViewData["Title"] = "Ontbrekende geplande betalingen";
+}
+
+<h2>Ontbrekende geplande betalingen</h2>
+<form method="get" class="mb-3">
+    <label asp-for="Year" class="form-label">Jaar</label>
+    <input asp-for="Year" class="form-control" style="max-width: 200px;" />
+    <button type="submit" class="btn btn-outline-secondary mt-2">Laden</button>
+</form>
+
+@if (Model.Suggestions.Count == 0)
+{
+    <div class="alert alert-success">Geen ontbrekende geplande betalingen gevonden voor @Model.Year.</div>
+}
+else
+{
+    @foreach (var s in Model.Suggestions)
+    {
+        <div class="card mb-3">
+            <div class="card-header">
+                <strong>@s.Expected.TemplateDescription</strong> - vervaldag @s.Expected.DueDate.ToString("yyyy-MM-dd")
+            </div>
+            <div class="card-body">
+                @if (s.Candidates.Count == 0)
+                {
+                    <p class="text-muted mb-0">Geen kandidaten gevonden binnen het datumvenster.</p>
+                }
+                else
+                {
+                    <table class="table table-sm">
+                        <thead><tr><th>Datum</th><th>Omschrijving</th><th>Bedrag</th><th>Afstand</th><th></th></tr></thead>
+                        <tbody>
+                        @foreach (var c in s.Candidates)
+                        {
+                            <tr>
+                                <td>@c.ExecutionDate.ToString("yyyy-MM-dd")</td>
+                                <td>@c.Description</td>
+                                <td>@c.Amount.ToString("F2")</td>
+                                <td>@c.DayDistance dag(en)</td>
+                                <td>
+                                    <form method="post" asp-page-handler="Map">
+                                        <input type="hidden" name="Input.ExecutionId" value="@c.Id" />
+                                        <input type="hidden" name="Input.TemplateId" value="@s.Expected.TemplateId" />
+                                        <input type="hidden" name="Input.Year" value="@s.Expected.Year" />
+                                        <input type="hidden" name="Input.Month" value="@s.Expected.Month" />
+                                        <button type="submit" class="btn btn-sm btn-primary">Mappen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    }
+}

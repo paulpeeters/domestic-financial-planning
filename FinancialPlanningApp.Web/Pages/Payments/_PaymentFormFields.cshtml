@@ -1,0 +1,152 @@
+@model FinancialPlanningApp.Web.Pages.Payments.RecurringPaymentTemplateInputModel
+@{
+    var selectedPaymentMonths = FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.ParsePaymentMonths(Model.PaymentMonths).ToHashSet();
+}
+
+<section class="payment-form-section">
+    <h5>Basis</h5>
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <label asp-for="Description" class="form-label">Omschrijving</label>
+            <input asp-for="Description" class="form-control" autocomplete="off" />
+            <span asp-validation-for="Description" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="AmountMode" class="form-label">Bedragstype</label>
+            <select asp-for="AmountMode" class="form-select" data-amount-mode data-initial-value="@Model.AmountMode">
+                <option value="@FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.FixedAmountMode">Vast bedrag</option>
+                <option value="@FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.MonthlyProfileAmountMode">Maandprofiel</option>
+            </select>
+            <span asp-validation-for="AmountMode" class="text-danger"></span>
+        </div>
+        <div class="col-md-3" data-fixed-amount-field>
+            <label asp-for="Amount" class="form-label">Bedrag per betaling</label>
+            <input asp-for="Amount" class="form-control" type="text" inputmode="decimal" autocomplete="off" data-val="false" />
+            <div class="form-text">Bij aangepaste maanden is dit het jaarbudget; de app verdeelt dit over de gekozen maanden.</div>
+            <span asp-validation-for="Amount" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="PaymentDay" class="form-label">Verwachte betalingsdag</label>
+            <input asp-for="PaymentDay" class="form-control" type="number" min="1" max="31" />
+            <span asp-validation-for="PaymentDay" class="text-danger"></span>
+        </div>
+    </div>
+</section>
+
+<section class="payment-form-section">
+    <h5>Planning</h5>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label asp-for="Periodicity" class="form-label">Periodiciteit</label>
+            <select asp-for="Periodicity" class="form-select" data-periodicity data-initial-value="@Model.Periodicity">
+                <option value="Monthly">Maandelijks</option>
+                <option value="BiMonthly">Tweemaandelijks</option>
+                <option value="Quarterly">Per kwartaal</option>
+                <option value="SemiAnnual">Halfjaarlijks</option>
+                <option value="Yearly">Jaarlijks</option>
+                <option value="@FinancialPlanningApp.Web.Services.Payments.RecurringPaymentSchedule.CustomMonthsYearlyBudget">Jaarbudget met aangepaste maanden</option>
+            </select>
+            <div class="form-text">Bij maandprofiel wordt automatisch maandelijks gebruikt.</div>
+            <span asp-validation-for="Periodicity" class="text-danger"></span>
+        </div>
+        <div class="col-md-3" data-payment-month-field>
+            <label asp-for="PaymentMonth" class="form-label">Start- of betalingsmaand</label>
+            <select asp-for="PaymentMonth" class="form-select">
+                <option value="">Automatisch</option>
+                @for (var month = 1; month <= 12; month++)
+                {
+                    <option value="@month">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(month)</option>
+                }
+            </select>
+            <span asp-validation-for="PaymentMonth" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="PaymentLagMonths" class="form-label">Betalingsvertraging</label>
+            <input asp-for="PaymentLagMonths" class="form-control" type="number" min="0" max="24" />
+            <div class="form-text">Gebruik 2 wanneer februari bij verbruik van december hoort.</div>
+            <span asp-validation-for="PaymentLagMonths" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="PaymentMethod" class="form-label">Betalingsmethode</label>
+            <select asp-for="PaymentMethod" class="form-select">
+                <option value="Transfer">Overschrijving</option>
+                <option value="DirectDebit">Domiciliering</option>
+                <option value="CreditCard">Kredietkaart</option>
+            </select>
+            <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="ActiveFrom" class="form-label">Geldig van</label>
+            <input asp-for="ActiveFrom" class="form-control" />
+            <span asp-validation-for="ActiveFrom" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="ActiveUntil" class="form-label">Geldig tot</label>
+            <input asp-for="ActiveUntil" class="form-control" />
+            <span asp-validation-for="ActiveUntil" class="text-danger"></span>
+        </div>
+    </div>
+</section>
+
+<div class="alert alert-warning mt-3" data-conditional-warning hidden>
+    Door het bedragstype of de periodiciteit te wijzigen kunnen waarden uit verborgen blokken worden opgeschoond bij opslaan.
+</div>
+
+<section class="payment-form-section" data-custom-months-field>
+    <h5>Aangepaste betalingsmaanden</h5>
+    <input asp-for="PaymentMonths" type="hidden" data-payment-months-input />
+    <div class="month-button-grid" role="group" aria-label="Betalingsmaanden">
+        @for (var month = 1; month <= 12; month++)
+        {
+            var id = $"PaymentMonthChoice_{month}";
+            <input id="@id" class="btn-check" type="checkbox" value="@month" data-payment-month-checkbox @(selectedPaymentMonths.Contains(month) ? "checked" : null) />
+            <label class="btn btn-outline-secondary" for="@id">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month)</label>
+        }
+    </div>
+    <div class="form-text">Selecteer de maanden waarin een betaling verwacht wordt.</div>
+    <span asp-validation-for="PaymentMonths" class="text-danger"></span>
+</section>
+
+<section class="payment-form-section">
+    <h5>Herkenning</h5>
+    <input asp-for="MatchingKeywords" type="hidden" data-keywords-input />
+    <label class="form-label" for="keywordEntry">Keywords</label>
+    <div class="keyword-tags" data-keyword-tags></div>
+    <div class="input-group">
+        <input id="keywordEntry" class="form-control" type="text" autocomplete="off" placeholder="bv. netflix.com" data-keyword-entry />
+        <button class="btn btn-outline-secondary" type="button" data-keyword-add>Toevoegen</button>
+    </div>
+    <div class="form-text">Gebruik Enter of komma om losse keywords toe te voegen. Opslag blijft compatibel als komma-gescheiden tekst.</div>
+    <span asp-validation-for="MatchingKeywords" class="text-danger"></span>
+</section>
+
+<section class="payment-form-section" data-monthly-profile-section>
+    <h5>Maandprofiel</h5>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle monthly-profile-table">
+            <thead>
+                <tr>
+                    @for (var month = 1; month <= 12; month++)
+                    {
+                        <th>@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetAbbreviatedMonthName(month)</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    @for (var month = 1; month <= 12; month++)
+                    {
+                        <td>
+                            <input class="form-control form-control-sm" id="MonthlyAmounts_@(month - 1)" name="@ViewData.TemplateInfo.GetFullHtmlFieldName($"MonthlyAmounts[{month - 1}]")" value="@Model.MonthlyAmounts[month - 1].ToString("0.##")" type="text" inputmode="decimal" autocomplete="off" data-val="false" data-monthly-profile-amount />
+                        </td>
+                    }
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="form-text">Een bedrag van 0 betekent geen verwachte betaling in die maand.</div>
+        <strong>Jaartotaal: <span data-monthly-profile-total>€ 0,00</span></strong>
+    </div>
+    <span asp-validation-for="MonthlyAmounts" class="text-danger"></span>
+</section>

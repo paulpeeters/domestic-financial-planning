@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="nl-BE">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FinancialPlanningApp</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/FinancialPlanningApp.Web.styles.css" asp-append-version="true" />
+</head>
+<body>
+    @inject FinancialPlanningApp.Web.Services.Auth.IHeaderContextService HeaderContextService
+    @inject FinancialPlanningApp.Web.Services.ApplicationInfo ApplicationInfo
+    @{
+        var header = await HeaderContextService.GetAsync(User);
+    }
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow mb-3">
+            <div class="container">
+                <a class="navbar-brand" asp-area="" asp-page="/Index">FinancialPlanningApp</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Navigatie openen">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div id="mainNavbar" class="navbar-collapse collapse justify-content-between">
+                    <ul class="navbar-nav flex-grow-1">
+                        <li class="nav-item"><a class="nav-link text-dark" asp-page="/Index">Dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Index">Betalingen</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" asp-page="/Imports/Index">Imports</a></li>
+                        <li class="nav-item"><a class="nav-link text-dark" asp-page="/Reconciliation/Index">Reconciliatie</a></li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Rapporten
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="reportsDropdown">
+                                <li><a class="dropdown-item" asp-page="/Reports/MonthlyPlanVsPaid">Maandplan versus betaald</a></li>
+                                <li><a class="dropdown-item" asp-page="/Reports/MonthlyCostVariance">Maandelijkse kostenafwijking</a></li>
+                                <li><a class="dropdown-item" asp-page="/Reports/ProvisionForecast">Provisieprognose</a></li>
+                                <li><a class="dropdown-item" asp-page="/Reports/PlannedItemsOverview">Overzicht geplande posten</a></li>
+                                <li><a class="dropdown-item" asp-page="/Reports/RecurringPaymentProvision">Provisie recurrente betalingen</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                    <ul class="navbar-nav">
+                        <li class="nav-item me-lg-2">
+                            <button type="button" class="btn btn-link nav-link text-dark" data-bs-toggle="modal" data-bs-target="#aboutAppModal">Over</button>
+                        </li>
+                    @if (header.IsAuthenticated)
+                    {
+                        <li class="nav-item dropdown me-2 d-flex align-items-center">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="tenantDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="@header.CurrentTenantFullName">
+                                @header.CurrentTenantDisplay
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="tenantDropdown">
+                                @foreach (var t in header.ActiveTenants)
+                                {
+                                    var shortDisplay = string.IsNullOrWhiteSpace(t.TenantShortName) ? $"#{t.TenantId}" : t.TenantShortName;
+                                    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+                                    <li>
+                                        <form method="post" asp-page="/Account/SwitchTenant" asp-route-returnUrl="@currentUrl">
+                                            <input type="hidden" name="TenantId" value="@t.TenantId" />
+                                            <button type="submit" class="dropdown-item" title="@t.TenantName">@shortDisplay - @t.TenantName</button>
+                                        </form>
+                                    </li>
+                                }
+                            </ul>
+                        </li>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                @if (!string.IsNullOrWhiteSpace(header.AvatarUrl))
+                                {
+                                    <img src="@header.AvatarUrl" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <span style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#e9ecef;font-size:12px;">
+                                        @header.DisplayName.Substring(0, 1).ToUpperInvariant()
+                                    </span>
+                                }
+                                <span>@header.DisplayName</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" asp-page="/Account/Profile">Profiel</a></li>
+                                @if (header.IsGlobalAdmin)
+                                {
+                                    <li><a class="dropdown-item" asp-page="/Account/GlobalAdmins">Globaal beheer</a></li>
+                                    <li><a class="dropdown-item" asp-page="/Account/MailSettings">Mailinstellingen</a></li>
+                                }
+                                @if (header.CanManageTenant)
+                                {
+                                    <li><a class="dropdown-item" asp-page="/Account/TenantMembers">Tenantbeheer</a></li>
+                                }
+                                @if (header.HasMultipleTenants)
+                                {
+                                    <li><a class="dropdown-item" asp-page="/Account/Tenants">Tenant kiezen</a></li>
+                                }
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form method="post" asp-page="/Account/Logout" class="px-3">
+                                        <button type="submit" class="btn btn-link p-0 text-decoration-none">Afmelden</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="btn btn-outline-primary" asp-page="/Account/Login">Aanmelden</a>
+                        </li>
+                    }
+                    @* fallback removed: register/login links handled by profile/login button *@
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <div class="modal fade" id="aboutAppModal" tabindex="-1" aria-labelledby="aboutAppModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="aboutAppModalTitle">Over deze app</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Product</dt>
+                        <dd class="col-sm-8">@ApplicationInfo.Product</dd>
+                        <dt class="col-sm-4">Versie</dt>
+                        <dd class="col-sm-8">@ApplicationInfo.Version</dd>
+                        <dt class="col-sm-4">Bedrijf</dt>
+                        <dd class="col-sm-8">@ApplicationInfo.Company</dd>
+                        <dt class="col-sm-4">Copyright</dt>
+                        <dd class="col-sm-8">@ApplicationInfo.Copyright</dd>
+                        <dt class="col-sm-4">Technologie</dt>
+                        <dd class="col-sm-8">@ApplicationInfo.Framework</dd>
+                        <dt class="col-sm-4">Database</dt>
+                        <dd class="col-sm-8">MySQL/MariaDB</dd>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Sluiten</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="confirmActionModalTitle">Actie bevestigen</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                </div>
+                <div class="modal-body" id="confirmActionModalBody">
+                    Ben je zeker?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuleren</button>
+                    <button type="button" class="btn btn-danger" id="confirmActionModalConfirm">Bevestigen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

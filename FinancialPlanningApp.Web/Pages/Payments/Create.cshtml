@@ -1,0 +1,35 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Payments.CreateModel
+@{
+    ViewData["Title"] = "Betalingstemplate maken";
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h2 class="mb-1">Betalingstemplate maken</h2>
+        <p class="text-muted mb-0">Definieer planning, bedrag en herkenning voor een recurrente betaling.</p>
+    </div>
+    <a asp-page="Index" class="btn btn-outline-secondary">Terug</a>
+</div>
+
+@if (Model.SourceDescription is not null)
+{
+    <div class="alert alert-info">
+        Nieuwe template op basis van <strong>@Model.SourceDescription</strong>. Pas minstens de geldigheidsperiode na.
+    </div>
+}
+
+<form method="post" class="mt-3" data-payment-form>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <partial name="_PaymentFormFields" for="Input" />
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Opslaan</button>
+        <a asp-page="Index" class="btn btn-outline-secondary">Annuleren</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <partial name="_PaymentFormScripts" />
+}

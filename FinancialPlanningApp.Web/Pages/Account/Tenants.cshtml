@@ -1,0 +1,67 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.TenantsModel
+@{
+    ViewData["Title"] = "Tenant wisselen";
+}
+
+<h1>Tenant wisselen</h1>
+
+<p>Kies welke huishoud-/werkruimte-tenant je voor deze sessie wil gebruiken.</p>
+
+<form method="post" asp-page-handler="Switch" class="row g-3">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="col-md-8">
+        <label asp-for="SelectedTenantId" class="form-label">Actieve tenant</label>
+        <select asp-for="SelectedTenantId" class="form-select">
+            @foreach (var t in Model.Tenants)
+            {
+                var shortDisplay = string.IsNullOrWhiteSpace(t.TenantShortName) ? $"#{t.TenantId}" : t.TenantShortName;
+                var label = $"{shortDisplay} - {t.TenantName} ({t.Role})";
+                if (!t.IsActive)
+                {
+                    label += " [inactief]";
+                }
+                <option value="@t.TenantId">@label</option>
+            }
+        </select>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Tenant wisselen</button>
+    </div>
+</form>
+
+@if (Model.CurrentTenantId is not null)
+{
+    <p class="mt-3 text-muted">Huidige tenant-id in sessie: @Model.CurrentTenantId</p>
+}
+
+<h2 class="mt-4">Lidmaatschappen</h2>
+<div class="table-responsive">
+    <table class="table table-sm table-striped">
+        <thead>
+        <tr>
+            <th>Tenant</th>
+            <th>Kort</th>
+            <th>Slug</th>
+            <th>Rol</th>
+            <th>Actief</th>
+        </tr>
+        </thead>
+        <tbody>
+        @foreach (var t in Model.Tenants)
+        {
+            <tr>
+                <td>@t.TenantName</td>
+                <td>@(string.IsNullOrWhiteSpace(t.TenantShortName) ? "-" : t.TenantShortName)</td>
+                <td>@t.TenantSlug</td>
+                <td>@t.Role</td>
+                <td>@(t.IsActive ? "Ja" : "Nee")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
