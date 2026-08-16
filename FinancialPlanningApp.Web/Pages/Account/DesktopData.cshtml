@@ -16,6 +16,15 @@
     <div class="alert alert-success" role="status">@Model.StatusMessage</div>
 }
 
+@if (!string.IsNullOrWhiteSpace(Model.NewRecoveryCode))
+{
+    <div class="alert alert-warning" role="status">
+        <h2 class="h5">Nieuwe herstelcode</h2>
+        <p>Bewaar deze code op papier of in je wachtwoordmanager. De code wordt niet opnieuw getoond.</p>
+        <p class="fs-5 mb-0"><code>@Model.NewRecoveryCode</code></p>
+    </div>
+}
+
 <section class="border rounded p-3 mb-3">
     <h2 class="h5">Maandelijkse provisie</h2>
     <form method="post" asp-page-handler="ProvisionSettings" class="row g-3 align-items-start">
@@ -32,6 +41,32 @@
         </div>
         <div class="col-sm-auto d-flex align-items-start pt-sm-4">
             <button type="submit" class="btn btn-primary">Provisie opslaan</button>
+        </div>
+    </form>
+</section>
+
+<section class="border rounded p-3 mb-3">
+    <h2 class="h5">Wachtwoordherstel</h2>
+    <p class="text-muted">
+        @(Model.RecoverySettings.IsConfigured
+            ? "Wachtwoordherstel is ingesteld. Als je dit wijzigt, wordt een nieuwe herstelcode gemaakt."
+            : "Stel een herstelvraag in en bewaar de herstelcode. Zo kun je je wachtwoord herstellen zonder e-mail.")
+    </p>
+    <form method="post" asp-page-handler="RecoverySettings" class="row g-3 align-items-start">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="col-lg-6">
+            <label asp-for="RecoverySettingsInput.Question" class="form-label mb-1">Herstelvraag</label>
+            <input asp-for="RecoverySettingsInput.Question" class="form-control" />
+            <span asp-validation-for="RecoverySettingsInput.Question" class="text-danger"></span>
+        </div>
+        <div class="col-lg-4">
+            <label asp-for="RecoverySettingsInput.Answer" class="form-label mb-1">Nieuw herstelantwoord</label>
+            <input asp-for="RecoverySettingsInput.Answer" class="form-control" autocomplete="off" />
+            <div class="form-text">Het antwoord wordt versleuteld opgeslagen.</div>
+            <span asp-validation-for="RecoverySettingsInput.Answer" class="text-danger"></span>
+        </div>
+        <div class="col-lg-auto d-flex align-items-start pt-lg-4">
+            <button type="submit" class="btn btn-primary">Herstel opslaan</button>
         </div>
     </form>
 </section>

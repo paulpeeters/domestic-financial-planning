@@ -9,6 +9,18 @@
         <h1>Financiële planning instellen</h1>
         <p class="text-muted">Maak je lokale account en huishouden aan. Alles wordt op deze computer bewaard.</p>
 
+        @if (Model.SetupCompleted)
+        {
+            <div class="alert alert-success mt-4" role="status">
+                <h2 class="h5">Installatie voltooid</h2>
+                <p>Je lokale account is aangemaakt. Bewaar deze herstelcode op papier of in je wachtwoordmanager.</p>
+                <p class="fs-5 mb-2"><code>@Model.RecoveryCode</code></p>
+                <p class="mb-0">Deze code wordt niet opnieuw getoond. Je kunt later wel een nieuwe herstelvraag en herstelcode instellen via <strong>Instellingen en backup</strong>.</p>
+            </div>
+            <a asp-page="/Index" class="btn btn-primary">Naar dashboard</a>
+        }
+        else
+        {
         <form method="post" class="mt-4">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
@@ -62,8 +74,25 @@
                 </div>
             </section>
 
+            <section class="border rounded p-3 mb-3">
+                <h2 class="h5">Wachtwoordherstel</h2>
+                <p class="text-muted">Gebruik een persoonlijke vraag waarvan het antwoord niet makkelijk te raden is. Daarnaast krijg je na de setup een eenmalige herstelcode.</p>
+                <div class="mb-3">
+                    <label asp-for="Input.RecoveryQuestion" class="form-label"></label>
+                    <input asp-for="Input.RecoveryQuestion" class="form-control" />
+                    <span asp-validation-for="Input.RecoveryQuestion" class="text-danger"></span>
+                </div>
+                <div>
+                    <label asp-for="Input.RecoveryAnswer" class="form-label"></label>
+                    <input asp-for="Input.RecoveryAnswer" class="form-control" autocomplete="off" />
+                    <span asp-validation-for="Input.RecoveryAnswer" class="text-danger"></span>
+                    <div class="form-text">Het antwoord wordt versleuteld opgeslagen en kan niet worden teruggelezen.</div>
+                </div>
+            </section>
+
             <button type="submit" class="btn btn-primary">Installatie voltooien</button>
         </form>
+        }
     </div>
 </div>
 

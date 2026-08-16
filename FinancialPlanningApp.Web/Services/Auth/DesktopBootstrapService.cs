@@ -12,6 +12,7 @@ public sealed record DesktopBootstrapResult(
     string? FirstName,
     string? LastName,
     string? AvatarUrl,
+    string? RecoveryCode,
     string? Error);
 
 public interface IDesktopBootstrapService
@@ -25,13 +26,16 @@ public interface IDesktopBootstrapService
         string? lastName,
         string tenantName,
         string? tenantShortName,
+        string recoveryQuestion,
+        string recoveryAnswer,
         CancellationToken cancellationToken = default);
 }
 
 public sealed class DesktopBootstrapService(
     IOptions<ApplicationModeOptions> applicationMode,
     IUserRepository userRepository,
-    IPasswordService passwordService) : IDesktopBootstrapService
+    IPasswordService passwordService,
+    IDesktopPasswordRecoveryService desktopPasswordRecoveryService) : IDesktopBootstrapService
 {
     public bool IsEnabled => applicationMode.Value.IsSingleUserDesktop;
 
@@ -45,6 +49,8 @@ public sealed class DesktopBootstrapService(
         string? lastName,
         string tenantName,
         string? tenantShortName,
+        string recoveryQuestion,
+        string recoveryAnswer,
         CancellationToken cancellationToken = default)
     {
         if (!IsEnabled)
@@ -83,6 +89,13 @@ public sealed class DesktopBootstrapService(
             Normalize(tenantShortName),
             cancellationToken);
 
+        var recoveryCode = desktopPasswordRecoveryService.GenerateRecoveryCode();
+        await desktopPasswordRecoveryService.ConfigureAsync(
+            recoveryQuestion,
+            recoveryAnswer,
+            recoveryCode,
+            cancellationToken);
+
         return new DesktopBootstrapResult(
             true,
             userId,
@@ -91,11 +104,12 @@ public sealed class DesktopBootstrapService(
             Normalize(firstName),
             Normalize(lastName),
             null,
+            recoveryCode,
             null);
     }
 
     private static DesktopBootstrapResult Failure(string error)
-        => new(false, 0, 0, string.Empty, null, null, null, error);
+        => new(false, 0, 0, string.Empty, null, null, null, null, error);
 
     private static string? Normalize(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

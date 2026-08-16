@@ -13,6 +13,8 @@ public class DesktopSetupModel(IDesktopBootstrapService desktopBootstrapService)
     public SetupInput Input { get; set; } = new();
 
     public bool IsAvailable { get; private set; }
+    public bool SetupCompleted { get; private set; }
+    public string? RecoveryCode { get; private set; }
 
     public sealed class SetupInput
     {
@@ -41,6 +43,14 @@ public class DesktopSetupModel(IDesktopBootstrapService desktopBootstrapService)
         [StringLength(10)]
         [Display(Name = "Korte naam")]
         public string? TenantShortName { get; set; } = "Thuis";
+
+        [Required, StringLength(200, MinimumLength = 8)]
+        [Display(Name = "Herstelvraag")]
+        public string RecoveryQuestion { get; set; } = "Welke persoonlijke zin gebruik ik voor deze installatie?";
+
+        [Required, DataType(DataType.Password), MinLength(6)]
+        [Display(Name = "Herstelantwoord")]
+        public string RecoveryAnswer { get; set; } = string.Empty;
     }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
@@ -79,6 +89,8 @@ public class DesktopSetupModel(IDesktopBootstrapService desktopBootstrapService)
             Input.LastName,
             Input.TenantName,
             Input.TenantShortName,
+            Input.RecoveryQuestion,
+            Input.RecoveryAnswer,
             cancellationToken);
 
         if (!result.Success)
@@ -106,6 +118,8 @@ public class DesktopSetupModel(IDesktopBootstrapService desktopBootstrapService)
         var identity = new ClaimsIdentity(claims, "AppCookie");
         await HttpContext.SignInAsync("AppCookie", new ClaimsPrincipal(identity));
 
-        return RedirectToPage("/Index");
+        SetupCompleted = true;
+        RecoveryCode = result.RecoveryCode;
+        return Page();
     }
 }

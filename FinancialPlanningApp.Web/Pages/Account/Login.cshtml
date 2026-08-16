@@ -24,9 +24,6 @@
     </div>
     <div class="d-flex align-items-center gap-2">
         <button type="submit" class="btn btn-primary">Aanmelden</button>
-        @if (!Model.IsDesktopMode)
-        {
-            <a asp-page="/Account/ForgotPassword" class="btn btn-link">Wachtwoord vergeten?</a>
-        }
+        <a asp-page="/Account/ForgotPassword" class="btn btn-link">Wachtwoord vergeten?</a>
     </div>
 </form>

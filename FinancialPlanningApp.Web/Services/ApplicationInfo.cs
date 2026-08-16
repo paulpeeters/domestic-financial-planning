@@ -7,7 +7,7 @@ public sealed class ApplicationInfo
     public string Product { get; init; } = "Domestic Financial Planning";
     public string Company { get; init; } = "PWARE";
     public string Copyright { get; init; } = "© 2026 PWARE";
-    public string Version { get; init; } = "1.0.3.0";
+    public string Version { get; init; } = "1.0.4.0";
     public string Framework { get; init; } = "ASP.NET Razor Pages";
     public string License { get; init; } = "GNU AGPL v3.0 or later";
     public string SourceUrl { get; init; } = "https://github.com/paulpeeters/domestic-financial-planning";
@@ -24,7 +24,7 @@ public sealed class ApplicationInfo
             Product = string.IsNullOrWhiteSpace(product) ? "Domestic Financial Planning" : product,
             Company = string.IsNullOrWhiteSpace(company) ? "PWARE" : company,
             Copyright = string.IsNullOrWhiteSpace(copyright) ? "© 2026 PWARE" : copyright,
-            Version = string.IsNullOrWhiteSpace(version) ? "1.0.3.0" : version
+            Version = string.IsNullOrWhiteSpace(version) ? "1.0.4.0" : version
         };
     }
 }

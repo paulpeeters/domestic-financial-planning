@@ -11,7 +11,7 @@
 #endif
 
 #ifndef AppVersion
-#define AppVersion "1.0.3.0"
+#define AppVersion "1.0.4.0"
 #endif
 
 [Setup]
@@ -29,7 +29,7 @@ OutputBaseFilename=DomesticFinancialPlanning-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile={#ProjectRoot}\FinancialPlanningApp.Web\wwwroot\favicon.ico
+SetupIconFile={#ProjectRoot}\FinancialPlanningApp.Web\wwwroot\app-icon.ico
 UninstallDisplayIcon={app}\FinancialPlanningApp.Web.exe
 LicenseFile={#ProjectRoot}\LICENSE
 ArchitecturesAllowed=x64compatible

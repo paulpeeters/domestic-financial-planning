@@ -10,15 +10,23 @@ namespace FinancialPlanningApp.Web.Pages.Account;
 [Authorize]
 public class DesktopDataModel(
     IDesktopDataService desktopDataService,
-    IApplicationSettingsService applicationSettingsService) : PageModel
+    IApplicationSettingsService applicationSettingsService,
+    IDesktopPasswordRecoveryService desktopPasswordRecoveryService) : PageModel
 {
     public DesktopDataInfo DataInfo { get; private set; } = new();
+    public DesktopRecoverySettings RecoverySettings { get; private set; } = new(false, null);
 
     [BindProperty]
     public ProvisionSettingsInput ProvisionSettings { get; set; } = new();
 
+    [BindProperty]
+    public RecoverySettingsForm RecoverySettingsInput { get; set; } = new();
+
     [TempData]
     public string? StatusMessage { get; set; }
+
+    [TempData]
+    public string? NewRecoveryCode { get; set; }
 
     public sealed class ProvisionSettingsInput
     {
@@ -27,6 +35,15 @@ public class DesktopDataModel(
 
         [Range(0, 9999999)]
         public decimal? MonthlyProvisionAmount { get; set; }
+    }
+
+    public sealed class RecoverySettingsForm
+    {
+        [Required, StringLength(200, MinimumLength = 8)]
+        public string Question { get; set; } = string.Empty;
+
+        [Required, DataType(DataType.Password), MinLength(6)]
+        public string Answer { get; set; } = string.Empty;
     }
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
@@ -72,6 +89,31 @@ public class DesktopDataModel(
         return RedirectToPage();
     }
 
+    public async Task<IActionResult> OnPostRecoverySettingsAsync(CancellationToken cancellationToken)
+    {
+        if (!desktopDataService.IsAvailable)
+        {
+            return NotFound();
+        }
+
+        ModelState.Clear();
+        if (!TryValidateModel(RecoverySettingsInput, nameof(RecoverySettingsInput)))
+        {
+            await LoadAsync(cancellationToken);
+            return Page();
+        }
+
+        var recoveryCode = desktopPasswordRecoveryService.GenerateRecoveryCode();
+        await desktopPasswordRecoveryService.ConfigureAsync(
+            RecoverySettingsInput.Question,
+            RecoverySettingsInput.Answer,
+            recoveryCode,
+            cancellationToken);
+        NewRecoveryCode = recoveryCode;
+        StatusMessage = "Wachtwoordherstel opgeslagen.";
+        return RedirectToPage();
+    }
+
     private async Task LoadAsync(CancellationToken cancellationToken)
     {
         DataInfo = desktopDataService.GetInfo();
@@ -79,6 +121,11 @@ public class DesktopDataModel(
         {
             MonthlyProvisionDay = await applicationSettingsService.GetMonthlyProvisionDayAsync(cancellationToken),
             MonthlyProvisionAmount = await applicationSettingsService.GetMonthlyProvisionAmountAsync(cancellationToken)
+        };
+        RecoverySettings = await desktopPasswordRecoveryService.GetSettingsAsync(cancellationToken);
+        RecoverySettingsInput = new RecoverySettingsForm
+        {
+            Question = RecoverySettings.Question ?? "Welke persoonlijke zin gebruik ik voor deze installatie?"
         };
     }
 }

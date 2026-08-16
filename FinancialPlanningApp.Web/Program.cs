@@ -137,6 +137,7 @@ builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 builder.Services.AddScoped<ITenantSessionService, TenantSessionService>();
 builder.Services.AddScoped<ILoginAuditService, LoginAuditService>();
 builder.Services.AddScoped<IDesktopBootstrapService, DesktopBootstrapService>();
+builder.Services.AddScoped<IDesktopPasswordRecoveryService, DesktopPasswordRecoveryService>();
 builder.Services.AddScoped<IDesktopDataService, DesktopDataService>();
 builder.Services.AddScoped<IRecurringPaymentService, RecurringPaymentService>();
 builder.Services.AddScoped<IAnnualPlanningService, AnnualPlanningService>();
