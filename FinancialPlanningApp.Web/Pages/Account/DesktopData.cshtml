@@ -18,19 +18,19 @@
 
 <section class="border rounded p-3 mb-3">
     <h2 class="h5">Maandelijkse provisie</h2>
-    <form method="post" asp-page-handler="ProvisionSettings" class="row g-3 align-items-end">
-        <div class="col-md-4 col-lg-3">
-            <label asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-label">Stortingsdag</label>
+    <form method="post" asp-page-handler="ProvisionSettings" class="row g-3 align-items-start">
+        <div class="col-sm-4 col-lg-3">
+            <label asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-label mb-1">Stortingsdag</label>
             <input asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-control" type="number" min="1" max="28" />
             <span asp-validation-for="ProvisionSettings.MonthlyProvisionDay" class="text-danger"></span>
         </div>
-        <div class="col-md-5 col-lg-4">
-            <label asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-label">Vast bedrag</label>
+        <div class="col-sm-5 col-lg-4">
+            <label asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-label mb-1">Vast bedrag</label>
             <input asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-control" type="text" inputmode="decimal" data-val="false" placeholder="automatisch berekend" />
             <div class="form-text">Laat leeg om jaarplanning / 12 te gebruiken.</div>
             <span asp-validation-for="ProvisionSettings.MonthlyProvisionAmount" class="text-danger"></span>
         </div>
-        <div class="col-md-auto">
+        <div class="col-sm-auto d-flex align-items-start pt-sm-4">
             <button type="submit" class="btn btn-primary">Provisie opslaan</button>
         </div>
     </form>
