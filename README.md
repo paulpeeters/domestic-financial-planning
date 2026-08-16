@@ -273,13 +273,35 @@ Voor lokale ontwikkeling:
 - optioneel Docker Desktop;
 - een IDE zoals Visual Studio, Rider of VS Code.
 
-## Configuratie zonder secrets in Git
+## Configuratie per modus
 
-`appsettings.json` en `appsettings.Development.json` bevatten placeholders, bijvoorbeeld:
+### Desktopmodus
+
+Voor normaal desktopgebruik is geen `secrets.json`, MySQL-server of mailconfiguratie nodig. De Windows installer en het desktop launch profile gebruiken `appsettings.Desktop.json`:
 
 ```json
-"Provider": "MySql",
-"ConnectionString": "Server=@{DB_HOST};Port=@{DB_PORT};Database=@{DB_NAME};User ID=@{DB_USER};Password=@{DB_PASSWORD};Allow User Variables=true;"
+"Application": {
+  "Mode": "SingleUserDesktop"
+},
+"Database": {
+  "Provider": "Sqlite",
+  "ConnectionString": "Data Source=%LOCALAPPDATA%\\DomesticFinancialPlanning\\app.db"
+}
+```
+
+De lokale SQLite-database wordt bij de gebruiker onder `%LOCALAPPDATA%\DomesticFinancialPlanning` bewaard. Bij een lege database opent de app automatisch de desktop setup.
+
+De SQLite-migratie is een geconsolideerd schema voor nieuwe lokale desktopdatabases. Het is dus geen conversiepad van bestaande MySQL-data naar SQLite.
+
+### Server / multi-tenant modus
+
+Voor serverhosting of gewone multi-tenant development gebruikt de app standaard MySQL/MariaDB. `appsettings.json` en `appsettings.Development.json` bevatten placeholders, bijvoorbeeld:
+
+```json
+"Database": {
+  "Provider": "MySql",
+  "ConnectionString": "Server=@{DB_HOST};Port=@{DB_PORT};Database=@{DB_NAME};User ID=@{DB_USER};Password=@{DB_PASSWORD};Allow User Variables=true;"
+}
 ```
 
 De echte waarden komen uit:
@@ -307,26 +329,9 @@ Vul daarna de waarden in:
 
 `secrets.json` staat in `.gitignore` en mag niet gecommit worden.
 
-De databaseprovider is expliciet configureerbaar:
+Het serverpublish-profiel `Standard.pubxml` neemt `secrets.json` expliciet mee naar de private serverpublish-output. De publieke desktop installer en publieke server ZIP sluiten echte secrets bewust uit.
 
-```json
-"Database": {
-  "Provider": "MySql"
-}
-```
-
-`Sqlite` wordt gebruikt door de desktopmodus. De desktopconfig schrijft standaard naar:
-
-```json
-"Database": {
-  "Provider": "Sqlite",
-  "ConnectionString": "Data Source=%LOCALAPPDATA%\\DomesticFinancialPlanning\\app.db"
-}
-```
-
-De SQLite-migratie is een geconsolideerd schema voor nieuwe lokale desktopdatabases. Het is dus geen conversiepad van bestaande MySQL-data naar SQLite.
-
-## Lokaal starten met bestaande database
+## Lokaal starten met bestaande serverdatabase
 
 ```powershell
 dotnet run --project FinancialPlanningApp.Web
@@ -441,7 +446,7 @@ git status --short
 git grep -n "password\|secret\|DB_PASSWORD"
 ```
 
-Let op: placeholders zoals `@{DB_PASSWORD}` zijn verwacht; echte waarden horen alleen lokaal in `secrets.json` of in environment variables.
+Let op: placeholders zoals `@{DB_PASSWORD}` zijn verwacht in server/multi-tenant configuratie. Echte waarden horen alleen lokaal in `secrets.json`, in environment variables of in een private deployomgeving. Desktopmodus heeft normaal geen `secrets.json` nodig.
 
 ## Status
 
