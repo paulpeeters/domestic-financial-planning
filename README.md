@@ -131,7 +131,9 @@ Beschikbare beheermogelijkheden:
 
 ### Single user / desktop mode
 
-De app heeft een eerste configuratiehaak voor een latere desktopmodus:
+Naast de klassieke multi-tenant servermodus heeft de app een single-user desktopmodus. Die modus gebruikt dezelfde applicatie, maar draait lokaal met SQLite en verbergt tenant- en globaal-beheerkeuzes die voor één lokale gebruiker niet nodig zijn.
+
+Desktopmodus wordt geactiveerd met:
 
 ```json
 "Application": {
@@ -147,7 +149,7 @@ De standaard blijft:
 }
 ```
 
-In `SingleUserDesktop` worden tenant- en globaal-beheerkeuzes in de navigatie verborgen. De onderliggende datalaag blijft voorlopig dezelfde, zodat de bestaande multi-tenant werking niet gebroken wordt terwijl desktopinstallatie stap voor stap kan worden toegevoegd.
+In `SingleUserDesktop` blijft het bestaande datamodel intern tenant-aware, maar de app maakt automatisch één lokaal huishouden aan en presenteert zich als lokale single-user toepassing.
 
 Bij een lege database stuurt desktopmodus de gebruiker automatisch naar de eerste setup:
 
@@ -183,9 +185,13 @@ De desktop-publish schrijft een `desktop.mode` markerbestand mee. Daardoor start
 
 De desktopversie gebruikt een single-instance guard. Als de app al draait en de gebruiker de `.exe` opnieuw start, wordt de bestaande lokale app opnieuw geopend in de browser en sluit het tweede proces meteen af.
 
-### Windows installer
+Via `Data en backup` in het gebruikersmenu kan de gebruiker zien waar de lokale SQLite-database staat en een backup maken.
 
-Voor Windows kan van de desktop-publish een Inno Setup installer worden gemaakt. Installeer eerst Inno Setup 6. Via `winget` kan dat bijvoorbeeld met:
+Desktopmodus controleert optioneel op een nieuwe versie via `updates/latest.json`. Wanneer een nieuwere versie beschikbaar is, toont de app een updatebanner en, vanaf versies die deze functie bevatten, één keer per sessie een update-modal.
+
+### Windows Installer
+
+Voor Windows kan van de desktop-publish een Inno Setup installer worden gemaakt. Installeer eerst Inno Setup 7 of 6. Via `winget` kan dat bijvoorbeeld met:
 
 ```powershell
 winget install JRSoftware.InnoSetup
@@ -211,7 +217,7 @@ Mailinstellingen zijn globaal opgeslagen in de database. Ze kunnen gebruikt word
 
 - wachtwoord vergeten;
 - testmails;
-- later eventueel uitnodigingen of tijdelijke wachtwoorden.
+- uitnodigingen of tijdelijke wachtwoorden zodra die workflow wordt gebruikt.
 
 Ondersteunde opties zijn onder meer provider-API's en Custom SMTP. Gmail met app password kan via Custom SMTP worden gebruikt.
 
@@ -221,6 +227,7 @@ Ondersteunde opties zijn onder meer provider-API's en Custom SMTP. Gmail met app
 - .NET 10;
 - Dapper;
 - MySQL/MariaDB;
+- SQLite voor desktopmodus;
 - Razor Pages UI met Bootstrap;
 - SQL-migraties in `FinancialPlanningApp.Web/Database/Migrations`;
 - cookie-authenticatie;
@@ -232,16 +239,19 @@ Ondersteunde opties zijn onder meer provider-API's en Custom SMTP. Gmail met app
 ```text
 .
 ├── FinancialPlanningApp.Web/        # Razor Pages webapp
-├── FinancialPlanningApp.slnx        # Solution op repo-root
+├── installer/                       # Inno Setup script voor Windows desktop installer
+├── tools/                           # Packaging, checksum en website publish scripts
+├── website/                         # Statische download/update website
 ├── LICENSE                          # GNU AGPL v3.0-or-later
 ├── Dockerfile
 ├── docker-compose.yml
+├── FinancialPlanningApp.slnx        # Solution op repo-root
 ├── .env.example
 ├── .gitignore
 └── README.md
 ```
 
-De repository-root bevat bewust ook Docker-, environment- en solutionbestanden. Daarom staat Git best op de rootmap, niet enkel in `FinancialPlanningApp.Web`.
+De repository-root bevat bewust ook Docker-, packaging-, website-, environment- en solutionbestanden. Daarom staat Git best op de rootmap, niet enkel in `FinancialPlanningApp.Web`.
 
 ## Licentie
 
@@ -258,7 +268,8 @@ Broncode: [github.com/paulpeeters/domestic-financial-planning](https://github.co
 Voor lokale ontwikkeling:
 
 - .NET 10 SDK;
-- MySQL of MariaDB;
+- MySQL of MariaDB voor server/multi-tenant ontwikkeling;
+- SQLite wordt meegeleverd via NuGet voor desktopmodus;
 - optioneel Docker Desktop;
 - een IDE zoals Visual Studio, Rider of VS Code.
 
@@ -358,6 +369,8 @@ http://localhost:8080
 
 ## Eerste stappen in de app
 
+In server/multi-tenant modus:
+
 1. Maak een eerste gebruiker aan.
 2. Maak of selecteer een tenant.
 3. Stel eventueel de maandelijkse provisiedag en het vaste provisiebedrag in.
@@ -365,6 +378,8 @@ http://localhost:8080
 5. Importeer CODA- of kredietkaartafschriften, of gebruik manueel afpunten.
 6. Reconcileer transacties naar recurrente betalingen, provisies of extra kosten.
 7. Gebruik dashboard en rapporten om afwijkingen te verklaren.
+
+In desktopmodus start een lege database automatisch met `/Account/DesktopSetup`. Die eerste setup maakt de lokale beheerder en het lokale huishouden aan en meldt de gebruiker meteen aan.
 
 ## Voorbeeld van recurrente betalingen
 
@@ -432,5 +447,7 @@ Let op: placeholders zoals `@{DB_PASSWORD}` zijn verwacht; echte waarden horen a
 
 De huidige versie is `1.0.1.0`.
 
-De app is functioneel voor lokaal of privaat gebruik, maar voor brede publieke distributie zijn nog extra stappen nuttig, zoals een eenvoudige installer, optionele SQLite-modus en een eerste-run wizard voor niet-technische gebruikers.
+De app is functioneel voor lokaal of privaat gebruik. Er is een multi-tenant servermodus met MySQL/MariaDB en een Windows desktopmodus met SQLite, eerste setup, backupmogelijkheid, update-check en Inno Setup installer.
+
+Voor brede publieke distributie blijven vooral praktische randzaken belangrijk, zoals code-signing/reputatie van de installer, verdere documentatie en extra testdekking op verschillende machines.
 
