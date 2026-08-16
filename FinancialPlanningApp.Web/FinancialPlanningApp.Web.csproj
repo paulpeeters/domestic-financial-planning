@@ -11,7 +11,7 @@
 		<Product>Domestic Financial Planning</Product>
 		<Company>PWARE</Company>
 		<Copyright>© 2026 PWARE</Copyright>
-		<Version>1.0.2.0</Version>
+		<Version>1.0.3.0</Version>
 		<PackageLicenseExpression>AGPL-3.0-or-later</PackageLicenseExpression>
 		<RepositoryUrl>https://github.com/paulpeeters/domestic-financial-planning</RepositoryUrl>
 	</PropertyGroup>

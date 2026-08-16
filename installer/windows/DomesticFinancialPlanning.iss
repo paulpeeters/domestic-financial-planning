@@ -11,7 +11,7 @@
 #endif
 
 #ifndef AppVersion
-#define AppVersion "1.0.2.0"
+#define AppVersion "1.0.3.0"
 #endif
 
 [Setup]
@@ -54,3 +54,24 @@ Name: "{autodesktop}\Domestic Financial Planning"; Filename: "{app}\FinancialPla
 
 [Run]
 Filename: "{app}\FinancialPlanningApp.Web.exe"; Description: "Domestic Financial Planning starten"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
+
+[Code]
+procedure StopRunningDesktopApp();
+var
+  ResultCode: Integer;
+begin
+  Exec(
+    ExpandConstant('{sys}\taskkill.exe'),
+    '/IM FinancialPlanningApp.Web.exe /T /F',
+    '',
+    SW_HIDE,
+    ewWaitUntilTerminated,
+    ResultCode);
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+begin
+  StopRunningDesktopApp();
+  Sleep(1000);
+  Result := '';
+end;

@@ -9,7 +9,7 @@
 - `SqlDateOnlyTypeHandler` is registered in `Program.cs`.
 - Repository hygiene is active: `.gitignore` excludes build output, IDE state, local imports/financial files, and `secrets.json`.
 - Appsettings may contain placeholders such as `@{DB_HOST}`. Database connection placeholders are resolved from `FinancialPlanningApp.Web/secrets.json` or same-named environment variables; `secrets.template.json` documents the required keys and contains no real values.
-- Application version is pinned through csproj assembly metadata (`Version` currently `1.0.2.0`) and shown in a shared Bootstrap "Over" modal from the main navigation.
+- Application version is pinned through csproj assembly metadata (`Version` currently `1.0.3.0`) and shown in a shared Bootstrap "Over" modal from the main navigation.
 - The project is licensed under GNU AGPL v3.0-or-later. The root `LICENSE` file contains the full AGPL-3.0 text, the README/website/About modal link to the license/source repository, and the Windows installer shows/includes the license.
 - Runtime mode is configured through `Application:Mode`, defaulting to `MultiTenant`. `SingleUserDesktop` hides tenant/global management navigation, is shown in the "Over" modal, and keeps the existing multi-tenant data model intact.
 - `appsettings.Desktop.json` sets `Application:Mode` to `SingleUserDesktop` and `Database:Provider` to `Sqlite`; `launchSettings.json` contains a `desktop` profile with `ASPNETCORE_ENVIRONMENT=Desktop`.
