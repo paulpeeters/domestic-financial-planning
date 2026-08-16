@@ -230,6 +230,42 @@
         </div>
     </div>
 
+    @if (updateCheck.IsAvailable)
+    {
+        var updateModalStorageKey = $"financial-planning:update-modal:{updateCheck.CurrentVersion}:{updateCheck.LatestVersion}";
+        <div class="modal fade" id="updateAvailableModal" tabindex="-1" aria-labelledby="updateAvailableModalTitle" aria-hidden="true" data-update-autoshow="true" data-update-storage-key="@updateModalStorageKey">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title h5" id="updateAvailableModalTitle">Nieuwe versie beschikbaar</h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Sluiten"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p>
+                            Versie <strong>@updateCheck.LatestVersion</strong> is beschikbaar.
+                            Je gebruikt momenteel versie <strong>@updateCheck.CurrentVersion</strong>.
+                        </p>
+                        <p class="mb-0">
+                            Installeer updates liefst tijdig. Sommige updates kunnen belangrijke correcties bevatten voor berekeningen,
+                            rapporten of gegevensverwerking.
+                        </p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Later</button>
+                        @if (!string.IsNullOrWhiteSpace(updateCheck.ReleaseNotesUrl))
+                        {
+                            <a class="btn btn-outline-secondary" href="@updateCheck.ReleaseNotesUrl" target="_blank" rel="noopener">Info</a>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(updateCheck.DownloadUrl))
+                        {
+                            <a class="btn btn-primary" href="@updateCheck.DownloadUrl" target="_blank" rel="noopener">Downloaden</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="modal fade" id="confirmActionModal" tabindex="-1" aria-labelledby="confirmActionModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">

@@ -3,6 +3,27 @@
 
 // Write your JavaScript code.
 (() => {
+    const updateModalElement = document.getElementById("updateAvailableModal");
+    if (!updateModalElement || !window.bootstrap || updateModalElement.dataset.updateAutoshow !== "true") {
+        return;
+    }
+
+    const storageKey = updateModalElement.dataset.updateStorageKey || "financial-planning:update-modal";
+    try {
+        if (window.sessionStorage.getItem(storageKey) === "shown") {
+            return;
+        }
+
+        window.sessionStorage.setItem(storageKey, "shown");
+    } catch {
+        // If session storage is blocked, still show the update notification.
+    }
+
+    const modal = new bootstrap.Modal(updateModalElement);
+    modal.show();
+})();
+
+(() => {
     let pendingForm = null;
     let pendingSubmitter = null;
     let bypassConfirm = false;
