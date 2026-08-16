@@ -31,7 +31,7 @@ function Get-ProjectVersion {
         }
     }
 
-    return "1.0.1.0"
+    return "1.0.2.0"
 }
 
 function Assert-NoPrivateConfig {
@@ -47,6 +47,24 @@ function Assert-NoPrivateConfig {
     if ($forbiddenFiles) {
         $names = ($forbiddenFiles | ForEach-Object { $_.FullName }) -join [Environment]::NewLine
         throw "De publish-output bevat lokale secrets of lokale config en wordt niet verpakt:$([Environment]::NewLine)$names"
+    }
+}
+
+function Remove-PrivateConfig {
+    param([string]$Path)
+
+    $forbiddenFiles = Get-ChildItem -LiteralPath $Path -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -eq "secrets.json" -or
+            ($_.Name -like "secrets.*.json" -and $_.Name -ne "secrets.template.json") -or
+            $_.Name -eq "appsettings.Local.json" -or
+            $_.Name -eq "appsettings.Development.json" -or
+            $_.Name -eq "appsettings.Desktop.json" -or
+            $_.Name -eq "desktop.mode"
+        }
+
+    foreach ($file in $forbiddenFiles) {
+        Remove-Item -LiteralPath $file.FullName -Force
     }
 }
 
@@ -102,6 +120,7 @@ if (-not $SkipPublish) {
     dotnet publish $projectPath -c $Configuration /p:PublishProfile=$PublishProfile /p:PublishDir="$PublishDir\"
 }
 
+Remove-PrivateConfig -Path $PublishDir
 Assert-NoPrivateConfig -Path $PublishDir
 
 if (Test-Path -LiteralPath $stageRoot) {

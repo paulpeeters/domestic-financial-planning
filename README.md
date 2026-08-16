@@ -206,7 +206,7 @@ Daarna kan de installer worden gebouwd met:
 Het script voert eerst de desktop-publish uit, controleert dat er geen lokale secrets in de publish-output zitten, en compileert daarna:
 
 ```text
-<deploy-root>\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
+<deploy-root>\Installer\DomesticFinancialPlanning-Setup-1.0.2.0.exe
 ```
 
 De installer installeert per gebruiker onder `%LOCALAPPDATA%\Programs\Domestic Financial Planning`, maakt een startmenu-snelkoppeling, en laat de SQLite-data bewust staan onder `%LOCALAPPDATA%\DomesticFinancialPlanning`.
@@ -450,7 +450,7 @@ Let op: placeholders zoals `@{DB_PASSWORD}` zijn verwacht in server/multi-tenant
 
 ## Status
 
-De huidige versie is `1.0.1.0`.
+De huidige versie is `1.0.2.0`.
 
 De app is functioneel voor lokaal of privaat gebruik. Er is een multi-tenant servermodus met MySQL/MariaDB en een Windows desktopmodus met SQLite, eerste setup, backupmogelijkheid, update-check en Inno Setup installer.
 

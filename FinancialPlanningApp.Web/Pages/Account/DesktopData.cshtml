@@ -1,15 +1,40 @@
 @page
 @model FinancialPlanningApp.Web.Pages.Account.DesktopDataModel
 @{
-    ViewData["Title"] = "Data en backup";
+    ViewData["Title"] = "Instellingen en backup";
 }
 
 <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-2 mb-3">
     <div>
-        <h1>Data en backup</h1>
-        <p class="text-muted mb-0">Bekijk waar de lokale database staat en maak een backupbestand.</p>
+        <h1>Instellingen en backup</h1>
+        <p class="text-muted mb-0">Beheer lokale provisie-instellingen, bekijk waar de database staat en maak een backupbestand.</p>
     </div>
 </div>
+
+@if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+{
+    <div class="alert alert-success" role="status">@Model.StatusMessage</div>
+}
+
+<section class="border rounded p-3 mb-3">
+    <h2 class="h5">Maandelijkse provisie</h2>
+    <form method="post" asp-page-handler="ProvisionSettings" class="row g-3 align-items-end">
+        <div class="col-md-4 col-lg-3">
+            <label asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-label">Stortingsdag</label>
+            <input asp-for="ProvisionSettings.MonthlyProvisionDay" class="form-control" type="number" min="1" max="28" />
+            <span asp-validation-for="ProvisionSettings.MonthlyProvisionDay" class="text-danger"></span>
+        </div>
+        <div class="col-md-5 col-lg-4">
+            <label asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-label">Vast bedrag</label>
+            <input asp-for="ProvisionSettings.MonthlyProvisionAmount" class="form-control" type="text" inputmode="decimal" data-val="false" placeholder="automatisch berekend" />
+            <div class="form-text">Laat leeg om jaarplanning / 12 te gebruiken.</div>
+            <span asp-validation-for="ProvisionSettings.MonthlyProvisionAmount" class="text-danger"></span>
+        </div>
+        <div class="col-md-auto">
+            <button type="submit" class="btn btn-primary">Provisie opslaan</button>
+        </div>
+    </form>
+</section>
 
 <section class="border rounded p-3 mb-3">
     <h2 class="h5">Lokale database</h2>
@@ -29,3 +54,7 @@
     <button type="submit" class="btn btn-primary" disabled="@(!Model.DataInfo.DatabaseExists)">Backup downloaden</button>
     <a asp-page="/Index" class="btn btn-outline-secondary">Terug</a>
 </form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

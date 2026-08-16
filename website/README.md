@@ -15,13 +15,13 @@ downloads/
 Plaats de Windows installer in:
 
 ```text
-downloads/DomesticFinancialPlanning-Setup-1.0.1.0.exe
+downloads/DomesticFinancialPlanning-Setup-1.0.2.0.exe
 ```
 
 Plaats de optionele serverversie in:
 
 ```text
-downloads/DomesticFinancialPlanning-Server-1.0.1.0.zip
+downloads/DomesticFinancialPlanning-Server-1.0.2.0.zip
 ```
 
 De map `downloads/` is in Git genegeerd, zodat grote installers en ZIP-bestanden niet per ongeluk in de repository terechtkomen.
@@ -103,13 +103,13 @@ Voor de desktopversie:
 Output:
 
 ```text
-<deploy-root>\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
+<deploy-root>\Installer\DomesticFinancialPlanning-Setup-1.0.2.0.exe
 ```
 
 Upload dit bestand naar:
 
 ```text
-downloads/DomesticFinancialPlanning-Setup-1.0.1.0.exe
+downloads/DomesticFinancialPlanning-Setup-1.0.2.0.exe
 ```
 
 ## Server ZIP maken
@@ -123,13 +123,13 @@ Voor de serverversie:
 Output:
 
 ```text
-<deploy-root>\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip
+<deploy-root>\Packages\DomesticFinancialPlanning-Server-1.0.2.0.zip
 ```
 
 Upload dit bestand naar:
 
 ```text
-downloads/DomesticFinancialPlanning-Server-1.0.1.0.zip
+downloads/DomesticFinancialPlanning-Server-1.0.2.0.zip
 ```
 
 Het serverpackage-script:
@@ -144,7 +144,7 @@ Controleer voor upload eventueel zelf nog:
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::OpenRead("<deploy-root>\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip").Entries |
+[IO.Compression.ZipFile]::OpenRead("<deploy-root>\Packages\DomesticFinancialPlanning-Server-1.0.2.0.zip").Entries |
   Where-Object { $_.FullName -match "secret|appsettings\.(Development|Desktop|Local)|desktop\.mode" } |
   Select-Object FullName
 ```
