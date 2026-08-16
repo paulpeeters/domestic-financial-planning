@@ -25,6 +25,9 @@ uploads/
 logs/
 CODA/
 CreditCardStatements/
+website/downloads/*
+!website/downloads/.gitkeep
+!website/downloads/checksums.txt
 *.coda
 *.cod
 

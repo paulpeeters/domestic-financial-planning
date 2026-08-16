@@ -2,11 +2,24 @@
 
 ## 1) Stack and Runtime
 - ASP.NET Razor Pages, Dapper, MySQL/MariaDB.
+- Database provider selection is explicit through `Database:Provider`, defaulting to `MySql`. A provider-aware connection factory exists for `MySql` and `Sqlite`; desktop mode uses SQLite with a local database file under `%LOCALAPPDATA%\DomesticFinancialPlanning\app.db`.
+- Repository SQL must remain compatible with both supported providers. When a query needs provider-specific syntax (timestamps, generated ids, upserts, string/date functions, delete aliases), split it explicitly on `Database:Provider` instead of introducing MySQL-only SQL.
 - SQL migrations via embedded scripts in `Database/Migrations`.
+- SQLite desktop schema uses a consolidated fresh-install migration in `Database/Migrations/Sqlite/001_DesktopSchema.sql`. It is intended for new local desktop databases, not for converting existing MySQL data.
 - `SqlDateOnlyTypeHandler` is registered in `Program.cs`.
 - Repository hygiene is active: `.gitignore` excludes build output, IDE state, local imports/financial files, and `secrets.json`.
 - Appsettings may contain placeholders such as `@{DB_HOST}`. Database connection placeholders are resolved from `FinancialPlanningApp.Web/secrets.json` or same-named environment variables; `secrets.template.json` documents the required keys and contains no real values.
-- Application version is pinned through csproj assembly metadata (`Version` currently `1.0.0.0`) and shown in a shared Bootstrap "Over" modal from the main navigation.
+- Application version is pinned through csproj assembly metadata (`Version` currently `1.0.1.0`) and shown in a shared Bootstrap "Over" modal from the main navigation.
+- The project is licensed under GNU AGPL v3.0-or-later. The root `LICENSE` file contains the full AGPL-3.0 text, the README/website/About modal link to the license/source repository, and the Windows installer shows/includes the license.
+- Runtime mode is configured through `Application:Mode`, defaulting to `MultiTenant`. `SingleUserDesktop` hides tenant/global management navigation, is shown in the "Over" modal, and keeps the existing multi-tenant data model intact.
+- `appsettings.Desktop.json` sets `Application:Mode` to `SingleUserDesktop` and `Database:Provider` to `Sqlite`; `launchSettings.json` contains a `desktop` profile with `ASPNETCORE_ENVIRONMENT=Desktop`.
+- Desktop publishing uses `Properties/PublishProfiles/Desktop.pubxml`. It publishes a self-contained Windows x64 folder to `C:\DATA\Projects\DEPLOY\FinancialPlanning\Desktop` and writes `desktop.mode`, which makes the published executable set the runtime environment to `Desktop` automatically. `Standard.pubxml` remains the separate server publish profile.
+- Windows desktop installer packaging uses Inno Setup through `installer/windows/DomesticFinancialPlanning.iss` and `tools/package-desktop-inno.ps1`. The script runs the desktop publish, checks that local secrets are not in the publish output, and writes `DomesticFinancialPlanning-Setup-<version>.exe` to `C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer`.
+- Desktop mode can check for updates through `Updates:LatestReleaseUrl` (`https://financialplanning.pware.be/updates/latest.json`). The check is cached, has a short timeout, compares the remote version with the assembly version, and shows a non-blocking update banner plus About-modal status only when a newer version is available.
+- In `SingleUserDesktop`, an empty database redirects `/` and `/Account/Login` to `/Account/DesktopSetup`. The setup page creates one local admin user, one local tenant, marks the user as global admin/tenant owner, sets the preferred tenant, and signs the user in immediately. Regular self-registration is disabled in desktop mode after setup.
+- Desktop mode exposes `/Account/DesktopData` from the user menu. It shows the exact local SQLite database path, backup directory, and can create a consistent downloadable `.db` backup through SQLite's backup API.
+- Desktop runtime chooses `Application:PreferredDesktopPort` (default 5196) when available and falls back to a free loopback port. It listens on `127.0.0.1`, writes runtime URL/process info to `%LOCALAPPDATA%\DomesticFinancialPlanning\runtime.json`, can open the browser automatically (`Application:OpenBrowserOnStart`), and exposes a desktop-only `/Account/Shutdown` page/menu action to stop the local app from the browser.
+- Desktop mode has a single-instance guard. A second desktop start reads the existing `%LOCALAPPDATA%\DomesticFinancialPlanning\runtime.json`, opens the existing local URL when possible, and exits without starting another Kestrel/SQLite process.
 - Request localization is configured with default `nl-BE` (EUR currency formatting).
 - Decimal form binding accepts both comma and dot decimal separators; payment amount inputs use text + decimal input mode to avoid browser locale conversion issues.
 - The visible application UI is Dutch (`nl-BE`); internal route names, enum values, provider keys, and database codes remain English/stable.

@@ -16,8 +16,27 @@ namespace FinancialPlanningApp.Web.Extensions
         public override DateOnly Parse(object value) => value switch
         {
             DateTime dt => DateOnly.FromDateTime(dt),
-            string s => DateOnly.Parse(s, CultureInfo.InvariantCulture),
+            string s when DateOnly.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) => date,
+            string s when DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var dateTime) => DateOnly.FromDateTime(dateTime),
             _ => DateOnly.FromDateTime((DateTime)value)
+        };
+    }
+
+    public sealed class SqlDecimalTypeHandler : SqlMapper.TypeHandler<decimal>
+    {
+        public override void SetValue(IDbDataParameter parameter, decimal value)
+            => parameter.Value = value;
+
+        public override decimal Parse(object value) => value switch
+        {
+            decimal d => d,
+            double d => Convert.ToDecimal(d, CultureInfo.InvariantCulture),
+            float f => Convert.ToDecimal(f, CultureInfo.InvariantCulture),
+            long l => l,
+            int i => i,
+            string s when decimal.TryParse(s, NumberStyles.Number, CultureInfo.InvariantCulture, out var invariant) => invariant,
+            string s when decimal.TryParse(s, NumberStyles.Number, CultureInfo.CurrentCulture, out var current) => current,
+            _ => Convert.ToDecimal(value, CultureInfo.InvariantCulture)
         };
     }
 }

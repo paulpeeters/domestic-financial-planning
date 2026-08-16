@@ -1,14 +1,21 @@
 using Dapper;
 using FinancialPlanningApp.Web.Data.Models;
 using FinancialPlanningApp.Web.Infrastructure.Database;
+using Microsoft.Extensions.Options;
 
 namespace FinancialPlanningApp.Web.Data.Repositories;
 
-public sealed class RecurringPaymentTemplateRepository(IDbConnectionFactory connectionFactory) : IRecurringPaymentTemplateRepository
+public sealed class RecurringPaymentTemplateRepository(
+    IDbConnectionFactory connectionFactory,
+    IOptions<DatabaseOptions> databaseOptions) : IRecurringPaymentTemplateRepository
 {
+    private bool IsSqlite => ProviderDbConnectionFactory.NormalizeProvider(databaseOptions.Value.Provider) == DatabaseProviders.Sqlite;
+    private string SearchExpression => IsSqlite ? "description LIKE '%' || @search || '%'" : "description LIKE CONCAT('%', @search, '%')";
+
     public async Task<(IReadOnlyList<RecurringPaymentTemplate> Items, int TotalCount)> ListByUserAsync(long userId, long tenantId, RecurringPaymentListQuery query, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var searchExpression = SearchExpression;
+        var sql = $"""
         SELECT id, user_id AS UserId, tenant_id AS TenantId, description, display_order AS DisplayOrder, periodicity,
                payment_month AS PaymentMonth, payment_months AS PaymentMonths, payment_day AS PaymentDay, payment_lag_months AS PaymentLagMonths,
                payment_method AS PaymentMethod, matching_keywords AS MatchingKeywords,
@@ -17,7 +24,7 @@ public sealed class RecurringPaymentTemplateRepository(IDbConnectionFactory conn
         FROM recurring_payment_templates
         WHERE tenant_id = @tenantId
           AND (@includeInactive = TRUE OR is_active = TRUE)
-          AND (@search IS NULL OR description LIKE CONCAT('%', @search, '%'))
+          AND (@search IS NULL OR {searchExpression})
         ORDER BY is_active DESC, display_order ASC, description ASC
         LIMIT @limit OFFSET @offset;
 
@@ -25,7 +32,7 @@ public sealed class RecurringPaymentTemplateRepository(IDbConnectionFactory conn
         FROM recurring_payment_templates
         WHERE tenant_id = @tenantId
           AND (@includeInactive = TRUE OR is_active = TRUE)
-          AND (@search IS NULL OR description LIKE CONCAT('%', @search, '%'));
+          AND (@search IS NULL OR {searchExpression});
         """;
 
         var pageNumber = query.PageNumber < 1 ? 1 : query.PageNumber;
@@ -86,7 +93,16 @@ public sealed class RecurringPaymentTemplateRepository(IDbConnectionFactory conn
 
     public async Task<long> CreateAsync(RecurringPaymentTemplate template, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var sql = IsSqlite
+            ? """
+              INSERT INTO recurring_payment_templates
+              (user_id, tenant_id, description, display_order, periodicity, payment_month, payment_months, payment_day, payment_lag_months, payment_method, matching_keywords, amount, amount_mode, monthly_amounts_json, normalized_monthly_amount, active_from, active_until, is_active, created_utc)
+              VALUES
+              (@UserId, @TenantId, @Description, @DisplayOrder, @Periodicity, @PaymentMonth, @PaymentMonths, @PaymentDay, @PaymentLagMonths, @PaymentMethod, @MatchingKeywords, @Amount, @AmountMode, @MonthlyAmountsJson, @NormalizedMonthlyAmount, @ActiveFrom, @ActiveUntil, @IsActive, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'));
+
+              SELECT last_insert_rowid();
+              """
+            : """
         INSERT INTO recurring_payment_templates
         (user_id, tenant_id, description, display_order, periodicity, payment_month, payment_months, payment_day, payment_lag_months, payment_method, matching_keywords, amount, amount_mode, monthly_amounts_json, normalized_monthly_amount, active_from, active_until, is_active, created_utc)
         VALUES

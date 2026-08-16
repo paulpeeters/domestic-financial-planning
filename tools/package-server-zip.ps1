@@ -1,0 +1,112 @@
+[CmdletBinding()]
+param(
+    [string]$Configuration = "Release",
+    [string]$PublishProfile = "Standard",
+    [string]$PublishDir = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Server",
+    [string]$PackageOutputDir = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Packages",
+    [switch]$SkipPublish
+)
+
+$ErrorActionPreference = "Stop"
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$projectPath = Join-Path $repoRoot "FinancialPlanningApp.Web\FinancialPlanningApp.Web.csproj"
+$stageRoot = Join-Path $repoRoot "artifacts\server-zip-stage"
+
+function Get-ProjectVersion {
+    param([string]$Path)
+
+    [xml]$project = Get-Content -LiteralPath $Path -Raw
+    foreach ($group in $project.Project.PropertyGroup) {
+        if ($group.Version) {
+            return [string]$group.Version
+        }
+    }
+
+    return "1.0.1.0"
+}
+
+function Assert-NoPrivateConfig {
+    param([string]$Path)
+
+    $forbiddenFiles = Get-ChildItem -LiteralPath $Path -Recurse -File -ErrorAction SilentlyContinue |
+        Where-Object {
+            $_.Name -eq "secrets.json" -or
+            ($_.Name -like "secrets.*.json" -and $_.Name -ne "secrets.template.json") -or
+            $_.Name -eq "appsettings.Local.json"
+        }
+
+    if ($forbiddenFiles) {
+        $names = ($forbiddenFiles | ForEach-Object { $_.FullName }) -join [Environment]::NewLine
+        throw "De publish-output bevat lokale secrets of lokale config en wordt niet verpakt:$([Environment]::NewLine)$names"
+    }
+}
+
+function Copy-PackageFiles {
+    param(
+        [string]$Source,
+        [string]$Destination
+    )
+
+    $excludedNames = @(
+        "secrets.json",
+        "appsettings.Local.json",
+        "appsettings.Development.json",
+        "appsettings.Desktop.json",
+        "desktop.mode"
+    )
+
+    $excludedExtensions = @(
+        ".pdb",
+        ".map"
+    )
+
+    Get-ChildItem -LiteralPath $Source -Recurse -File | ForEach-Object {
+        if ($excludedNames -contains $_.Name) {
+            return
+        }
+
+        if ($_.Name -like "secrets.*.json" -and $_.Name -ne "secrets.template.json") {
+            return
+        }
+
+        if ($excludedExtensions -contains $_.Extension) {
+            return
+        }
+
+        $relativePath = [System.IO.Path]::GetRelativePath($Source, $_.FullName)
+        $targetPath = Join-Path $Destination $relativePath
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $targetPath) | Out-Null
+        Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Force
+    }
+}
+
+if (-not $SkipPublish) {
+    dotnet publish $projectPath -c $Configuration /p:PublishProfile=$PublishProfile /p:PublishDir="$PublishDir\"
+}
+
+Assert-NoPrivateConfig -Path $PublishDir
+
+if (Test-Path -LiteralPath $stageRoot) {
+    $resolvedStage = (Resolve-Path -LiteralPath $stageRoot).Path
+    $expectedPrefix = (Resolve-Path -LiteralPath (Join-Path $repoRoot "artifacts")).Path
+    if (-not $resolvedStage.StartsWith($expectedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+        throw "Onveilige stage cleanup geweigerd: $resolvedStage"
+    }
+
+    Remove-Item -LiteralPath $resolvedStage -Recurse -Force
+}
+
+New-Item -ItemType Directory -Force -Path $stageRoot | Out-Null
+Copy-PackageFiles -Source $PublishDir -Destination $stageRoot
+
+$version = Get-ProjectVersion -Path $projectPath
+New-Item -ItemType Directory -Force -Path $PackageOutputDir | Out-Null
+
+$zipPath = Join-Path $PackageOutputDir "DomesticFinancialPlanning-Server-$version.zip"
+if (Test-Path -LiteralPath $zipPath) {
+    Remove-Item -LiteralPath $zipPath -Force
+}
+
+Compress-Archive -Path (Join-Path $stageRoot "*") -DestinationPath $zipPath -CompressionLevel Optimal
+Write-Host "Server ZIP klaar: $zipPath"

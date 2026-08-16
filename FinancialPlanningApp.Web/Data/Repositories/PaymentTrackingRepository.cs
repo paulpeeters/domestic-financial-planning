@@ -1,20 +1,33 @@
 using Dapper;
 using FinancialPlanningApp.Web.Data.Models;
 using FinancialPlanningApp.Web.Infrastructure.Database;
+using Microsoft.Extensions.Options;
 
 namespace FinancialPlanningApp.Web.Data.Repositories;
 
-public sealed class PaymentTrackingRepository(IDbConnectionFactory connectionFactory) : IPaymentTrackingRepository
+public sealed class PaymentTrackingRepository(
+    IDbConnectionFactory connectionFactory,
+    IOptions<DatabaseOptions> databaseOptions) : IPaymentTrackingRepository
 {
+    private bool IsSqlite => ProviderDbConnectionFactory.NormalizeProvider(databaseOptions.Value.Provider) == DatabaseProviders.Sqlite;
+
     public async Task<long> AddExecutionAsync(PaymentExecution execution, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-        INSERT INTO payment_executions
-        (user_id, tenant_id, template_id, execution_date, description, payment_method, amount, source_type, source_reference, source_sequence, source_account_number, source_card_number, notes, execution_type, mapping_status, mapped_template_id, mapped_period_year, mapped_period_month, created_utc)
-        VALUES
-        (@UserId, @TenantId, @TemplateId, @ExecutionDate, @Description, @PaymentMethod, @Amount, @SourceType, @SourceReference, @SourceSequence, @SourceAccountNumber, @SourceCardNumber, @Notes, @ExecutionType, @MappingStatus, @MappedTemplateId, @MappedPeriodYear, @MappedPeriodMonth, UTC_TIMESTAMP(6));
-        SELECT LAST_INSERT_ID();
-        """;
+        var sql = IsSqlite
+            ? """
+              INSERT INTO payment_executions
+              (user_id, tenant_id, template_id, execution_date, description, payment_method, amount, source_type, source_reference, source_sequence, source_account_number, source_card_number, notes, execution_type, mapping_status, mapped_template_id, mapped_period_year, mapped_period_month, created_utc)
+              VALUES
+              (@UserId, @TenantId, @TemplateId, @ExecutionDate, @Description, @PaymentMethod, @Amount, @SourceType, @SourceReference, @SourceSequence, @SourceAccountNumber, @SourceCardNumber, @Notes, @ExecutionType, @MappingStatus, @MappedTemplateId, @MappedPeriodYear, @MappedPeriodMonth, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'));
+              SELECT last_insert_rowid();
+              """
+            : """
+              INSERT INTO payment_executions
+              (user_id, tenant_id, template_id, execution_date, description, payment_method, amount, source_type, source_reference, source_sequence, source_account_number, source_card_number, notes, execution_type, mapping_status, mapped_template_id, mapped_period_year, mapped_period_month, created_utc)
+              VALUES
+              (@UserId, @TenantId, @TemplateId, @ExecutionDate, @Description, @PaymentMethod, @Amount, @SourceType, @SourceReference, @SourceSequence, @SourceAccountNumber, @SourceCardNumber, @Notes, @ExecutionType, @MappingStatus, @MappedTemplateId, @MappedPeriodYear, @MappedPeriodMonth, UTC_TIMESTAMP(6));
+              SELECT LAST_INSERT_ID();
+              """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteScalarAsync<long>(sql, execution);
@@ -22,13 +35,21 @@ public sealed class PaymentTrackingRepository(IDbConnectionFactory connectionFac
 
     public async Task<long> AddCorrectionAsync(PaymentCorrection correction, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-        INSERT INTO payment_corrections
-        (user_id, tenant_id, payment_execution_id, correction_type, amount_delta, reason, created_utc)
-        VALUES
-        (@UserId, @TenantId, @PaymentExecutionId, @CorrectionType, @AmountDelta, @Reason, UTC_TIMESTAMP(6));
-        SELECT LAST_INSERT_ID();
-        """;
+        var sql = IsSqlite
+            ? """
+              INSERT INTO payment_corrections
+              (user_id, tenant_id, payment_execution_id, correction_type, amount_delta, reason, created_utc)
+              VALUES
+              (@UserId, @TenantId, @PaymentExecutionId, @CorrectionType, @AmountDelta, @Reason, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'));
+              SELECT last_insert_rowid();
+              """
+            : """
+              INSERT INTO payment_corrections
+              (user_id, tenant_id, payment_execution_id, correction_type, amount_delta, reason, created_utc)
+              VALUES
+              (@UserId, @TenantId, @PaymentExecutionId, @CorrectionType, @AmountDelta, @Reason, UTC_TIMESTAMP(6));
+              SELECT LAST_INSERT_ID();
+              """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteScalarAsync<long>(sql, correction);

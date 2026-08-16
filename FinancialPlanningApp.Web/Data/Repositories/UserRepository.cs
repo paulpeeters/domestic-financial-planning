@@ -1,11 +1,17 @@
 using Dapper;
 using FinancialPlanningApp.Web.Data.Models;
 using FinancialPlanningApp.Web.Infrastructure.Database;
+using Microsoft.Extensions.Options;
 
 namespace FinancialPlanningApp.Web.Data.Repositories;
 
-public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUserRepository
+public sealed class UserRepository(
+    IDbConnectionFactory connectionFactory,
+    IOptions<DatabaseOptions> databaseOptions) : IUserRepository
 {
+    private bool IsSqlite => ProviderDbConnectionFactory.NormalizeProvider(databaseOptions.Value.Provider) == DatabaseProviders.Sqlite;
+    private string UtcNowSql => IsSqlite ? "STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')" : "UTC_TIMESTAMP(6)";
+
     public async Task<AppUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         const string sql = "SELECT id, email, password_hash AS PasswordHash, is_global_admin AS IsGlobalAdmin, is_active AS IsActive, preferred_tenant_id AS PreferredTenantId, first_name AS FirstName, last_name AS LastName, avatar_url AS AvatarUrl, created_utc AS CreatedUtc FROM app_users WHERE email = @email LIMIT 1;";
@@ -20,16 +26,39 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
         return await connection.QueryFirstOrDefaultAsync<AppUser>(sql, new { userId });
     }
 
+    public async Task<int> CountUsersAsync(CancellationToken cancellationToken = default)
+    {
+        const string sql = "SELECT COUNT(*) FROM app_users;";
+        using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
+        return await connection.ExecuteScalarAsync<int>(sql);
+    }
+
     public async Task<long> CreateAsync(string email, string passwordHash, string? firstName, string? lastName, string? avatarUrl, CancellationToken cancellationToken = default)
     {
-        const string sql = "INSERT INTO app_users(email, first_name, last_name, avatar_url, password_hash, created_utc) VALUES (@email, @firstName, @lastName, @avatarUrl, @passwordHash, UTC_TIMESTAMP(6)); SELECT LAST_INSERT_ID();";
+        var sql = IsSqlite
+            ? """
+              INSERT INTO app_users(email, first_name, last_name, avatar_url, password_hash, created_utc)
+              VALUES (@email, @firstName, @lastName, @avatarUrl, @passwordHash, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'));
+              SELECT last_insert_rowid();
+              """
+            : """
+              INSERT INTO app_users(email, first_name, last_name, avatar_url, password_hash, created_utc)
+              VALUES (@email, @firstName, @lastName, @avatarUrl, @passwordHash, UTC_TIMESTAMP(6));
+              SELECT LAST_INSERT_ID();
+              """;
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteScalarAsync<long>(sql, new { email, firstName, lastName, avatarUrl, passwordHash });
     }
 
     public async Task EnsureDefaultTenantForUserAsync(long userId, string email, CancellationToken cancellationToken = default)
     {
-        const string insertTenantSql = """
+        var insertTenantSql = IsSqlite
+            ? """
+              INSERT INTO tenants(name, slug, is_active, created_utc, updated_utc)
+              VALUES (@name, @slug, 1, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'), STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'))
+              ON CONFLICT(slug) DO UPDATE SET updated_utc = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now');
+              """
+            : """
         INSERT INTO tenants(name, slug, is_active, created_utc, updated_utc)
         VALUES (@name, @slug, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))
         ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), updated_utc = UTC_TIMESTAMP(6);
@@ -37,7 +66,13 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
         const string getTenantIdSql = "SELECT id FROM tenants WHERE slug = @slug LIMIT 1;";
 
-        const string insertMembershipSql = """
+        var insertMembershipSql = IsSqlite
+            ? """
+              INSERT INTO user_tenants(user_id, tenant_id, role, is_active, created_utc, updated_utc)
+              VALUES (@userId, @tenantId, 'OWNER', 1, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'), STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'))
+              ON CONFLICT(user_id, tenant_id) DO UPDATE SET role = 'OWNER', is_active = 1, updated_utc = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now');
+              """
+            : """
         INSERT INTO user_tenants(user_id, tenant_id, role, is_active, created_utc, updated_utc)
         VALUES (@userId, @tenantId, 'OWNER', 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))
         ON DUPLICATE KEY UPDATE role = 'OWNER', is_active = 1, updated_utc = UTC_TIMESTAMP(6);
@@ -205,14 +240,23 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
     public async Task<bool> UpsertTenantMembershipAsync(long tenantId, long targetUserId, string role, bool isActive, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-        INSERT INTO user_tenants(user_id, tenant_id, role, is_active, created_utc, updated_utc)
-        VALUES(@targetUserId, @tenantId, @role, @isActive, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))
-        ON DUPLICATE KEY UPDATE
-            role = VALUES(role),
-            is_active = VALUES(is_active),
-            updated_utc = UTC_TIMESTAMP(6);
-        """;
+        var sql = IsSqlite
+            ? """
+              INSERT INTO user_tenants(user_id, tenant_id, role, is_active, created_utc, updated_utc)
+              VALUES(@targetUserId, @tenantId, @role, @isActive, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'), STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'))
+              ON CONFLICT(user_id, tenant_id) DO UPDATE SET
+                  role = excluded.role,
+                  is_active = excluded.is_active,
+                  updated_utc = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now');
+              """
+            : """
+              INSERT INTO user_tenants(user_id, tenant_id, role, is_active, created_utc, updated_utc)
+              VALUES(@targetUserId, @tenantId, @role, @isActive, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))
+              ON DUPLICATE KEY UPDATE
+                  role = VALUES(role),
+                  is_active = VALUES(is_active),
+                  updated_utc = UTC_TIMESTAMP(6);
+              """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteAsync(sql, new { tenantId, targetUserId, role, isActive }) > 0;
@@ -220,12 +264,12 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
     public async Task<bool> UpdateTenantMemberDisplayAsync(long tenantId, long targetUserId, string? firstName, string? lastName, string? avatarUrl, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var sql = $"""
         UPDATE user_tenants
         SET display_first_name = @firstName,
             display_last_name = @lastName,
             display_avatar_url = @avatarUrl,
-            updated_utc = UTC_TIMESTAMP(6)
+            updated_utc = {UtcNowSql}
         WHERE tenant_id = @tenantId
           AND user_id = @targetUserId;
         """;
@@ -236,10 +280,10 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
     public async Task<bool> DeactivateTenantMembershipAsync(long tenantId, long targetUserId, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var sql = $"""
         UPDATE user_tenants
         SET is_active = 0,
-            updated_utc = UTC_TIMESTAMP(6)
+            updated_utc = {UtcNowSql}
         WHERE tenant_id = @tenantId
           AND user_id = @targetUserId;
         """;
@@ -348,18 +392,32 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
     public async Task<long> CreateTenantAsync(string name, string? shortName, string? slug, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-        INSERT INTO tenants(name, short_name, slug, is_active, created_utc, updated_utc)
-        VALUES(@name, @shortName, @slug, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6));
-        SELECT LAST_INSERT_ID();
-        """;
+        var sql = IsSqlite
+            ? """
+              INSERT INTO tenants(name, short_name, slug, is_active, created_utc, updated_utc)
+              VALUES(@name, @shortName, @slug, 1, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'), STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'));
+              SELECT last_insert_rowid();
+              """
+            : """
+              INSERT INTO tenants(name, short_name, slug, is_active, created_utc, updated_utc)
+              VALUES(@name, @shortName, @slug, 1, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6));
+              SELECT LAST_INSERT_ID();
+              """;
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteScalarAsync<long>(sql, new { name, shortName, slug });
     }
 
     public async Task<bool> UpdateTenantDisplayAsync(long tenantId, string name, string? shortName, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var sql = IsSqlite
+            ? """
+              UPDATE tenants
+              SET name = @name,
+                  short_name = @shortName,
+                  updated_utc = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now')
+              WHERE id = @tenantId;
+              """
+            : """
         UPDATE tenants
         SET name = @name,
             short_name = @shortName,
@@ -372,10 +430,10 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
     public async Task<bool> SetTenantActiveAsync(long tenantId, bool isActive, CancellationToken cancellationToken = default)
     {
-        const string sql = """
+        var sql = $"""
         UPDATE tenants
         SET is_active = @isActive,
-            updated_utc = UTC_TIMESTAMP(6)
+            updated_utc = {UtcNowSql}
         WHERE id = @tenantId;
         """;
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
@@ -449,23 +507,24 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             new { tenantId },
             tx)).ToList();
 
-        await connection.ExecuteAsync("DELETE pc FROM payment_corrections pc WHERE pc.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE ptm FROM payment_template_mappings ptm WHERE ptm.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE pe FROM payment_executions pe WHERE pe.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE rpt FROM recurring_payment_templates rpt WHERE rpt.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE rba FROM registered_bank_accounts rba WHERE rba.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE rcc FROM registered_credit_cards rcc WHERE rcc.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE amb FROM account_monthly_balances amb WHERE amb.tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM payment_corrections WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM payment_template_mappings WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM payment_executions WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM recurring_payment_templates WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM registered_bank_accounts WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM registered_credit_cards WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM account_monthly_balances WHERE tenant_id = @tenantId;", new { tenantId }, tx);
 
         await connection.ExecuteAsync(
             "UPDATE app_users SET preferred_tenant_id = NULL WHERE preferred_tenant_id = @tenantId;",
             new { tenantId },
             tx);
-        await connection.ExecuteAsync("DELETE ut FROM user_tenants ut WHERE ut.tenant_id = @tenantId;", new { tenantId }, tx);
-        await connection.ExecuteAsync("DELETE t FROM tenants t WHERE t.id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM user_tenants WHERE tenant_id = @tenantId;", new { tenantId }, tx);
+        await connection.ExecuteAsync("DELETE FROM tenants WHERE id = @tenantId;", new { tenantId }, tx);
 
         if (exclusiveUserIds.Count > 0)
         {
+            await connection.ExecuteAsync("DELETE FROM password_reset_tokens WHERE user_id IN @exclusiveUserIds;", new { exclusiveUserIds }, tx);
             await connection.ExecuteAsync("DELETE FROM auth_login_attempts WHERE user_id IN @exclusiveUserIds;", new { exclusiveUserIds }, tx);
             await connection.ExecuteAsync("DELETE FROM app_users WHERE id IN @exclusiveUserIds;", new { exclusiveUserIds }, tx);
         }
@@ -515,10 +574,9 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
         await connection.ExecuteAsync(
             """
-            DELETE pc
-            FROM payment_corrections pc
-            WHERE pc.user_id = @userId
-               OR pc.payment_execution_id IN (
+            DELETE FROM payment_corrections
+            WHERE user_id = @userId
+               OR payment_execution_id IN (
                     SELECT pe.id
                     FROM payment_executions pe
                     WHERE pe.user_id = @userId
@@ -530,31 +588,30 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
             tx);
         await connection.ExecuteAsync(
             """
-            DELETE ptm
-            FROM payment_template_mappings ptm
-            WHERE ptm.user_id = @userId
-               OR ptm.execution_id IN (SELECT pe.id FROM payment_executions pe WHERE pe.user_id = @userId)
-               OR ptm.template_id IN (SELECT rpt.id FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId);
+            DELETE FROM payment_template_mappings
+            WHERE user_id = @userId
+               OR execution_id IN (SELECT pe.id FROM payment_executions pe WHERE pe.user_id = @userId)
+               OR template_id IN (SELECT rpt.id FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId);
             """,
             new { userId },
             tx);
         await connection.ExecuteAsync(
             """
-            DELETE pe
-            FROM payment_executions pe
-            WHERE pe.user_id = @userId
-               OR pe.template_id IN (SELECT rpt.id FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId)
-               OR pe.mapped_template_id IN (SELECT rpt.id FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId);
+            DELETE FROM payment_executions
+            WHERE user_id = @userId
+               OR template_id IN (SELECT rpt.id FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId)
+               OR mapped_template_id IN (SELECT rpt.id FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId);
             """,
             new { userId },
             tx);
-        await connection.ExecuteAsync("DELETE rpt FROM recurring_payment_templates rpt WHERE rpt.user_id = @userId;", new { userId }, tx);
-        await connection.ExecuteAsync("DELETE rba FROM registered_bank_accounts rba WHERE rba.user_id = @userId;", new { userId }, tx);
-        await connection.ExecuteAsync("DELETE rcc FROM registered_credit_cards rcc WHERE rcc.user_id = @userId;", new { userId }, tx);
-        await connection.ExecuteAsync("DELETE amb FROM account_monthly_balances amb WHERE amb.user_id = @userId;", new { userId }, tx);
-        await connection.ExecuteAsync("DELETE ut FROM user_tenants ut WHERE ut.user_id = @userId;", new { userId }, tx);
-        await connection.ExecuteAsync("DELETE FROM auth_login_attempts WHERE user_id = @userId;", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM recurring_payment_templates WHERE user_id = @userId;", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM registered_bank_accounts WHERE user_id = @userId;", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM registered_credit_cards WHERE user_id = @userId;", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM account_monthly_balances WHERE user_id = @userId;", new { userId }, tx);
         await connection.ExecuteAsync("UPDATE app_users SET preferred_tenant_id = NULL WHERE preferred_tenant_id IN (SELECT tenant_id FROM user_tenants WHERE user_id = @userId);", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM user_tenants WHERE user_id = @userId;", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM password_reset_tokens WHERE user_id = @userId;", new { userId }, tx);
+        await connection.ExecuteAsync("DELETE FROM auth_login_attempts WHERE user_id = @userId;", new { userId }, tx);
         await connection.ExecuteAsync("DELETE FROM app_users WHERE id = @userId;", new { userId }, tx);
 
         tx.Commit();
@@ -570,13 +627,21 @@ public sealed class UserRepository(IDbConnectionFactory connectionFactory) : IUs
 
     public async Task<bool> SetAppSettingAsync(string key, string? value, CancellationToken cancellationToken = default)
     {
-        const string sql = """
-        INSERT INTO app_settings(`key`, `value`, updated_utc)
-        VALUES(@key, @value, UTC_TIMESTAMP(6))
-        ON DUPLICATE KEY UPDATE
-            `value` = VALUES(`value`),
-            updated_utc = UTC_TIMESTAMP(6);
-        """;
+        var sql = IsSqlite
+            ? """
+              INSERT INTO app_settings(`key`, `value`, updated_utc)
+              VALUES(@key, @value, STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now'))
+              ON CONFLICT(`key`) DO UPDATE SET
+                  `value` = excluded.`value`,
+                  updated_utc = STRFTIME('%Y-%m-%dT%H:%M:%fZ', 'now');
+              """
+            : """
+              INSERT INTO app_settings(`key`, `value`, updated_utc)
+              VALUES(@key, @value, UTC_TIMESTAMP(6))
+              ON DUPLICATE KEY UPDATE
+                  `value` = VALUES(`value`),
+                  updated_utc = UTC_TIMESTAMP(6);
+              """;
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
         return await connection.ExecuteAsync(sql, new { key, value }) > 0;
     }

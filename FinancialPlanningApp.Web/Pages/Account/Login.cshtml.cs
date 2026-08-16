@@ -8,10 +8,15 @@ using System.Security.Claims;
 
 namespace FinancialPlanningApp.Web.Pages.Account;
 
-public class LoginModel(IAuthService authService, ILoginAuditService loginAuditService) : PageModel
+public class LoginModel(
+    IAuthService authService,
+    ILoginAuditService loginAuditService,
+    IDesktopBootstrapService desktopBootstrapService) : PageModel
 {
     [BindProperty]
     public LoginInput Input { get; set; } = new();
+
+    public bool IsDesktopMode => desktopBootstrapService.IsEnabled;
 
     public sealed class LoginInput
     {
@@ -24,8 +29,23 @@ public class LoginModel(IAuthService authService, ILoginAuditService loginAuditS
         public string Password { get; set; } = string.Empty;
     }
 
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
+    {
+        if (await desktopBootstrapService.IsSetupRequiredAsync(cancellationToken))
+        {
+            return RedirectToPage("/Account/DesktopSetup");
+        }
+
+        return Page();
+    }
+
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
+        if (await desktopBootstrapService.IsSetupRequiredAsync(cancellationToken))
+        {
+            return RedirectToPage("/Account/DesktopSetup");
+        }
+
         var email = Input.Email?.Trim();
         var normalizedEmail = email?.ToLowerInvariant();
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString();

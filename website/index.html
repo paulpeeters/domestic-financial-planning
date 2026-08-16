@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Domestic Financial Planning</title>
+  <meta name="description" content="Domestic Financial Planning helpt huishoudens terugkerende kosten plannen, provisies opvolgen en betalingen vergelijken met de werkelijkheid.">
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #18202a;
+      --muted: #5a6675;
+      --line: #d9e0e8;
+      --panel: #f7f9fb;
+      --accent: #1d6f8f;
+      --accent-dark: #15556d;
+      --ok: #157347;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background: #ffffff;
+      line-height: 1.55;
+    }
+
+    a {
+      color: var(--accent-dark);
+    }
+
+    .hero {
+      background: linear-gradient(180deg, #eef6f8 0%, #ffffff 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    .hero-inner {
+      padding: 64px 0 44px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+      gap: 42px;
+      align-items: center;
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(2.2rem, 5vw, 4.4rem);
+      line-height: 1.02;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 0;
+      max-width: 760px;
+      font-size: 1.18rem;
+      color: var(--muted);
+    }
+
+    .hero-panel {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.74);
+      padding: 22px;
+      border-radius: 8px;
+    }
+
+    .hero-panel strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .button.primary {
+      color: #ffffff;
+      background: var(--accent);
+    }
+
+    .button.secondary {
+      color: var(--accent-dark);
+      background: #ffffff;
+    }
+
+    main {
+      padding: 42px 0 64px;
+    }
+
+    section {
+      margin-top: 34px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 1.55rem;
+      letter-spacing: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: #ffffff;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 1.05rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .download {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      margin-top: 14px;
+    }
+
+    .download h3 {
+      margin: 0 0 4px;
+    }
+
+    .download p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .note {
+      padding: 16px 18px;
+      background: #f3f8f5;
+      border: 1px solid #cfe5d8;
+      border-radius: 8px;
+      color: #244334;
+    }
+
+    .download-warning {
+      margin: 10px 0 18px;
+      padding: 12px 14px;
+      border: 1px solid #ead7a4;
+      border-radius: 8px;
+      background: #fff8e6;
+      color: #5a4215;
+      font-size: 0.95rem;
+    }
+
+    .steps {
+      margin: 10px 0 18px;
+      padding: 14px 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .steps h3 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+
+    .steps ol {
+      margin: 0;
+      padding-left: 22px;
+      color: var(--muted);
+    }
+
+    .steps li + li {
+      margin-top: 4px;
+    }
+
+    .checksum {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      overflow-wrap: anywhere;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #eef2f5;
+      font-family: Consolas, "Liberation Mono", monospace;
+      font-size: 0.95em;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      padding: 22px 0;
+      font-size: 0.94rem;
+    }
+
+    @media (max-width: 820px) {
+      .hero-inner,
+      .grid,
+      .download {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-inner {
+        padding-top: 42px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="wrap hero-inner">
+      <div>
+        <h1>Domestic Financial Planning</h1>
+        <p class="lead">
+          Een lokale webapp om terugkerende huishoudelijke kosten te plannen, maandelijkse provisies op te volgen en afwijkingen tussen verwachte en betaalde kosten snel te verklaren.
+        </p>
+        <div class="buttons">
+          <a class="button primary" href="/downloads/DomesticFinancialPlanning-Setup-1.0.1.0.exe">Windows installer downloaden</a>
+          <a class="button secondary" href="/updates/latest.json">Update-info bekijken</a>
+        </div>
+      </div>
+      <aside class="hero-panel">
+        <strong>Voor gezinnen en privégebruik</strong>
+        De app draait lokaal op je eigen computer met een SQLite-database. Er is geen cloudaccount nodig voor de desktopversie.
+      </aside>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>Wat doet de app?</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Recurrente betalingen plannen</h3>
+          <p>Leg abonnementen, verzekeringen, belastingen, energie, water en andere terugkerende kosten vast met maand-, jaar-, kwartaal- of aangepaste schema's.</p>
+        </article>
+        <article class="card">
+          <h3>Provisies opvolgen</h3>
+          <p>Vergelijk wat je maandelijks opzijzet met wat er gepland, betaald en nog verwacht wordt voor het lopende jaar.</p>
+        </article>
+        <article class="card">
+          <h3>Afwijkingen verklaren</h3>
+          <p>Rapporten tonen per maand welke betalingen ontbreken, te hoog of te laag zijn, en welke automatische betalingen vermoedelijk al uitgevoerd zijn.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>Beschikbare downloads</h2>
+      <div class="download">
+        <div>
+          <h3>Windows desktopversie</h3>
+          <p>Self-contained installer. Installeert per gebruiker en gebruikt een lokale SQLite-database onder <code>%LOCALAPPDATA%\DomesticFinancialPlanning</code>.</p>
+          <p class="checksum">SHA-256: <code>79C3CAF4E5EE2B77EDC13BFFDC81AFA6D921DCF77BD52D5014FD633383DB4876</code></p>
+        </div>
+        <a class="button primary" href="/downloads/DomesticFinancialPlanning-Setup-1.0.1.0.exe">Download</a>
+      </div>
+      <p class="download-warning">
+        Windows of Edge kan melden dat deze installer niet vaak wordt gedownload. Dat is normaal voor een nieuwe, gratis app zonder commerciële code-signing reputatie. Controleer dat de download van <code>financialplanning.pware.be</code> komt voordat je het bestand opent.
+      </p>
+      <div class="steps">
+        <h3>Downloaden met Microsoft Edge</h3>
+        <ol>
+          <li>Klik in de downloadmelding op de drie puntjes naast het bestand.</li>
+          <li>Kies <strong>Behouden</strong>.</li>
+          <li>Kies daarna eventueel <strong>Meer weergeven</strong> en opnieuw <strong>Toch behouden</strong>.</li>
+          <li>Open het bestand alleen wanneer de naam begint met <code>DomesticFinancialPlanning-Setup</code> en de download van deze site komt.</li>
+        </ol>
+      </div>
+      <div class="download">
+        <div>
+          <h3>Serverversie</h3>
+          <p>Optioneel ZIP-pakket voor eigen hosting. Vereist .NET/ASP.NET runtime en eigen configuratie voor MySQL/MariaDB.</p>
+          <p class="checksum">SHA-256: <code>3619EFA6FBCE51E37CAAEC47ED750999577D6EE5DA52008E8EBFECCA2A562AC7</code></p>
+        </div>
+        <a class="button secondary" href="/downloads/DomesticFinancialPlanning-Server-1.0.1.0.zip">Server ZIP</a>
+      </div>
+    </section>
+
+    <section>
+      <h2>Desktop of server?</h2>
+      <div class="grid">
+        <article class="card">
+          <h3>Desktop</h3>
+          <p>Beste keuze voor persoonlijk gebruik. Installeren, eerste gebruiker aanmaken, en starten via de browser op dezelfde computer.</p>
+        </article>
+        <article class="card">
+          <h3>Server</h3>
+          <p>Voor wie de app zelf wil hosten met MySQL/MariaDB, meerdere tenants en eventueel reverse proxy of Docker.</p>
+        </article>
+        <article class="card">
+          <h3>Data blijft lokaal</h3>
+          <p>De desktopdatabase wordt niet verwijderd bij een update. Maak regelmatig een backup via de app.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="note">
+      <strong>Let op:</strong>
+      dit is een hulpmiddel voor privéplanning, geen boekhoud- of financieel adviespakket. Controleer belangrijke bedragen altijd met bankafschriften, facturen en officiële documenten.
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>
+        Vragen, feedback of problemen kunnen via het GitHub-profiel van de auteur:
+        <a href="https://github.com/paulpeeters" rel="me">github.com/paulpeeters</a>.
+        Zodra de repository publiek is, kan de projectpagina ook gebruikt worden voor issues en releases.
+      </p>
+    </section>
+
+    <section>
+      <h2>Licentie en broncode</h2>
+      <p>
+        Domestic Financial Planning is vrije software onder de
+        <a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License v3.0 of later</a>.
+        De broncode is beschikbaar via
+        <a href="https://github.com/paulpeeters/domestic-financial-planning">github.com/paulpeeters/domestic-financial-planning</a>.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      Domestic Financial Planning · PWARE · Versie 1.0.1.0 · GNU AGPL v3.0-or-later
+    </div>
+  </footer>
+</body>
+</html>
+

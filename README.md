@@ -129,6 +129,80 @@ Beschikbare beheermogelijkheden:
 - tenant-specifieke weergavenaam en avatar instellen;
 - tenant-specifieke provisie-instellingen beheren.
 
+### Single user / desktop mode
+
+De app heeft een eerste configuratiehaak voor een latere desktopmodus:
+
+```json
+"Application": {
+  "Mode": "SingleUserDesktop"
+}
+```
+
+De standaard blijft:
+
+```json
+"Application": {
+  "Mode": "MultiTenant"
+}
+```
+
+In `SingleUserDesktop` worden tenant- en globaal-beheerkeuzes in de navigatie verborgen. De onderliggende datalaag blijft voorlopig dezelfde, zodat de bestaande multi-tenant werking niet gebroken wordt terwijl desktopinstallatie stap voor stap kan worden toegevoegd.
+
+Bij een lege database stuurt desktopmodus de gebruiker automatisch naar de eerste setup:
+
+```text
+/Account/DesktopSetup
+```
+
+Die setup maakt een lokale beheerder en een lokaal huishouden aan, kent de nodige rechten toe en meldt de gebruiker meteen aan. Daarna is gewone zelfregistratie in desktopmodus uitgeschakeld.
+
+Voor lokaal testen is er een aparte launch profile:
+
+```powershell
+dotnet run --project FinancialPlanningApp.Web --launch-profile desktop
+```
+
+Die gebruikt `ASPNETCORE_ENVIRONMENT=Desktop` en laadt `appsettings.Desktop.json`, waarin `Application:Mode` automatisch op `SingleUserDesktop` staat.
+
+Voor een Windows desktop-publish is er een apart publish-profiel:
+
+```powershell
+dotnet publish .\FinancialPlanningApp.Web\FinancialPlanningApp.Web.csproj /p:PublishProfile=Desktop
+```
+
+Dat profiel publiceert self-contained naar:
+
+```text
+C:\DATA\Projects\DEPLOY\FinancialPlanning\Desktop
+```
+
+De desktop-publish schrijft een `desktop.mode` markerbestand mee. Daardoor start de gepubliceerde `.exe` automatisch in desktopmodus met SQLite, zonder dat de gebruiker zelf environment variables moet instellen. Het bestaande `Standard.pubxml` profiel blijft bedoeld voor serverhosting.
+
+De desktopversie gebruikt een single-instance guard. Als de app al draait en de gebruiker de `.exe` opnieuw start, wordt de bestaande lokale app opnieuw geopend in de browser en sluit het tweede proces meteen af.
+
+### Windows installer
+
+Voor Windows kan van de desktop-publish een Inno Setup installer worden gemaakt. Installeer eerst Inno Setup 6. Via `winget` kan dat bijvoorbeeld met:
+
+```powershell
+winget install JRSoftware.InnoSetup
+```
+
+Daarna kan de installer worden gebouwd met:
+
+```powershell
+.\tools\package-desktop-inno.ps1
+```
+
+Het script voert eerst de desktop-publish uit, controleert dat er geen lokale secrets in de publish-output zitten, en compileert daarna:
+
+```text
+C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
+```
+
+De installer installeert per gebruiker onder `%LOCALAPPDATA%\Programs\Domestic Financial Planning`, maakt een startmenu-snelkoppeling, en laat de SQLite-data bewust staan onder `%LOCALAPPDATA%\DomesticFinancialPlanning`.
+
 ### Mailinstellingen
 
 Mailinstellingen zijn globaal opgeslagen in de database. Ze kunnen gebruikt worden voor:
@@ -157,6 +231,7 @@ Ondersteunde opties zijn onder meer provider-API's en Custom SMTP. Gmail met app
 .
 ├── FinancialPlanningApp.Web/        # Razor Pages webapp
 ├── FinancialPlanningApp.slnx        # Solution op repo-root
+├── LICENSE                          # GNU AGPL v3.0-or-later
 ├── Dockerfile
 ├── docker-compose.yml
 ├── .env.example
@@ -165,6 +240,16 @@ Ondersteunde opties zijn onder meer provider-API's en Custom SMTP. Gmail met app
 ```
 
 De repository-root bevat bewust ook Docker-, environment- en solutionbestanden. Daarom staat Git best op de rootmap, niet enkel in `FinancialPlanningApp.Web`.
+
+## Licentie
+
+Domestic Financial Planning is beschikbaar onder de GNU Affero General Public License v3.0 of later (`AGPL-3.0-or-later`).
+
+Zie [LICENSE](LICENSE) voor de volledige licentietekst.
+
+Copyright (C) 2026 Paul Peeters / PWARE.
+
+Broncode: [github.com/paulpeeters/domestic-financial-planning](https://github.com/paulpeeters/domestic-financial-planning)
 
 ## Vereisten
 
@@ -180,6 +265,7 @@ Voor lokale ontwikkeling:
 `appsettings.json` en `appsettings.Development.json` bevatten placeholders, bijvoorbeeld:
 
 ```json
+"Provider": "MySql",
 "ConnectionString": "Server=@{DB_HOST};Port=@{DB_PORT};Database=@{DB_NAME};User ID=@{DB_USER};Password=@{DB_PASSWORD};Allow User Variables=true;"
 ```
 
@@ -207,6 +293,25 @@ Vul daarna de waarden in:
 ```
 
 `secrets.json` staat in `.gitignore` en mag niet gecommit worden.
+
+De databaseprovider is expliciet configureerbaar:
+
+```json
+"Database": {
+  "Provider": "MySql"
+}
+```
+
+`Sqlite` wordt gebruikt door de desktopmodus. De desktopconfig schrijft standaard naar:
+
+```json
+"Database": {
+  "Provider": "Sqlite",
+  "ConnectionString": "Data Source=%LOCALAPPDATA%\\DomesticFinancialPlanning\\app.db"
+}
+```
+
+De SQLite-migratie is een geconsolideerd schema voor nieuwe lokale desktopdatabases. Het is dus geen conversiepad van bestaande MySQL-data naar SQLite.
 
 ## Lokaal starten met bestaande database
 
@@ -323,6 +428,7 @@ Let op: placeholders zoals `@{DB_PASSWORD}` zijn verwacht; echte waarden horen a
 
 ## Status
 
-De huidige versie is `1.0.0.0`.
+De huidige versie is `1.0.1.0`.
 
 De app is functioneel voor lokaal of privaat gebruik, maar voor brede publieke distributie zijn nog extra stappen nuttig, zoals een eenvoudige installer, optionele SQLite-modus en een eerste-run wizard voor niet-technische gebruikers.
+

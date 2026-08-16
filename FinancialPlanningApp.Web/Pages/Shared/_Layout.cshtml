@@ -4,20 +4,28 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - FinancialPlanningApp</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/FinancialPlanningApp.Web.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/css/site.css" />
 </head>
 <body>
     @inject FinancialPlanningApp.Web.Services.Auth.IHeaderContextService HeaderContextService
     @inject FinancialPlanningApp.Web.Services.ApplicationInfo ApplicationInfo
+    @inject FinancialPlanningApp.Web.Services.IUpdateCheckService UpdateCheckService
+    @inject Microsoft.Extensions.Options.IOptions<FinancialPlanningApp.Web.Services.ApplicationModeOptions> ApplicationMode
+    @inject Microsoft.Extensions.Options.IOptions<FinancialPlanningApp.Web.Infrastructure.Database.DatabaseOptions> DatabaseOptions
     @{
         var header = await HeaderContextService.GetAsync(User);
+        var isSingleUserDesktop = ApplicationMode.Value.IsSingleUserDesktop;
+        var appDisplayName = isSingleUserDesktop ? "Financiële planning" : "FinancialPlanningApp";
+        var databaseDisplay = string.Equals(DatabaseOptions.Value.Provider, FinancialPlanningApp.Web.Infrastructure.Database.DatabaseProviders.Sqlite, StringComparison.OrdinalIgnoreCase)
+            ? "SQLite (lokaal)"
+            : "MySQL/MariaDB";
+        var updateCheck = isSingleUserDesktop ? await UpdateCheckService.CheckAsync() : FinancialPlanningApp.Web.Services.UpdateCheckResult.Disabled(ApplicationInfo.Version);
     }
     <header>
         <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom box-shadow mb-3">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">FinancialPlanningApp</a>
+                <a class="navbar-brand" asp-area="" asp-page="/Index">@appDisplayName</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Navigatie openen">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -25,8 +33,15 @@
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item"><a class="nav-link text-dark" asp-page="/Index">Dashboard</a></li>
                         <li class="nav-item"><a class="nav-link text-dark" asp-page="/Payments/Index">Betalingen</a></li>
-                        <li class="nav-item"><a class="nav-link text-dark" asp-page="/Imports/Index">Imports</a></li>
-                        <li class="nav-item"><a class="nav-link text-dark" asp-page="/Reconciliation/Index">Reconciliatie</a></li>
+                        @if (isSingleUserDesktop)
+                        {
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Reconciliation/Manual">Afpunten</a></li>
+                        }
+                        else
+                        {
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Imports/Index">Imports</a></li>
+                            <li class="nav-item"><a class="nav-link text-dark" asp-page="/Reconciliation/Index">Reconciliatie</a></li>
+                        }
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle text-dark" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                                 Rapporten
@@ -46,31 +61,34 @@
                         </li>
                     @if (header.IsAuthenticated)
                     {
-                        <li class="nav-item dropdown me-2 d-flex align-items-center">
-                            <a class="nav-link dropdown-toggle text-dark" href="#" id="tenantDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="@header.CurrentTenantFullName">
-                                @header.CurrentTenantDisplay
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="tenantDropdown">
-                                @foreach (var t in header.ActiveTenants)
-                                {
-                                    var shortDisplay = string.IsNullOrWhiteSpace(t.TenantShortName) ? $"#{t.TenantId}" : t.TenantShortName;
-                                    var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
-                                    <li>
-                                        <form method="post" asp-page="/Account/SwitchTenant" asp-route-returnUrl="@currentUrl">
-                                            <input type="hidden" name="TenantId" value="@t.TenantId" />
-                                            <button type="submit" class="dropdown-item" title="@t.TenantName">@shortDisplay - @t.TenantName</button>
-                                        </form>
-                                    </li>
-                                }
-                            </ul>
-                        </li>
+                        @if (!isSingleUserDesktop)
+                        {
+                            <li class="nav-item dropdown me-2 d-flex align-items-center">
+                                <a class="nav-link dropdown-toggle text-dark" href="#" id="tenantDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" title="@header.CurrentTenantFullName">
+                                    @header.CurrentTenantDisplay
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="tenantDropdown">
+                                    @foreach (var t in header.ActiveTenants)
+                                    {
+                                        var shortDisplay = string.IsNullOrWhiteSpace(t.TenantShortName) ? $"#{t.TenantId}" : t.TenantShortName;
+                                        var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+                                        <li>
+                                            <form method="post" asp-page="/Account/SwitchTenant" asp-route-returnUrl="@currentUrl">
+                                                <input type="hidden" name="TenantId" value="@t.TenantId" />
+                                                <button type="submit" class="dropdown-item" title="@t.TenantName">@shortDisplay - @t.TenantName</button>
+                                            </form>
+                                        </li>
+                                    }
+                                </ul>
+                            </li>
+                        }
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 text-dark" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                @if (!string.IsNullOrWhiteSpace(header.AvatarUrl))
+                                @if (!isSingleUserDesktop && !string.IsNullOrWhiteSpace(header.AvatarUrl))
                                 {
                                     <img src="@header.AvatarUrl" alt="avatar" style="width:28px;height:28px;border-radius:50%;object-fit:cover;" />
                                 }
-                                else
+                                else if (!isSingleUserDesktop)
                                 {
                                     <span style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#e9ecef;font-size:12px;">
                                         @header.DisplayName.Substring(0, 1).ToUpperInvariant()
@@ -80,16 +98,31 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" asp-page="/Account/Profile">Profiel</a></li>
+                                @if (isSingleUserDesktop)
+                                {
+                                    <li><a class="dropdown-item" asp-page="/Account/DesktopData">Data en backup</a></li>
+                                    <li>
+                                        <form method="post" asp-page="/Account/Shutdown">
+                                            <button type="submit" class="dropdown-item">App afsluiten</button>
+                                        </form>
+                                    </li>
+                                }
                                 @if (header.IsGlobalAdmin)
                                 {
-                                    <li><a class="dropdown-item" asp-page="/Account/GlobalAdmins">Globaal beheer</a></li>
-                                    <li><a class="dropdown-item" asp-page="/Account/MailSettings">Mailinstellingen</a></li>
+                                    @if (!isSingleUserDesktop)
+                                    {
+                                        <li><a class="dropdown-item" asp-page="/Account/GlobalAdmins">Globaal beheer</a></li>
+                                    }
+                                    @if (!isSingleUserDesktop)
+                                    {
+                                        <li><a class="dropdown-item" asp-page="/Account/MailSettings">Mailinstellingen</a></li>
+                                    }
                                 }
-                                @if (header.CanManageTenant)
+                                @if (header.CanManageTenant && !isSingleUserDesktop)
                                 {
                                     <li><a class="dropdown-item" asp-page="/Account/TenantMembers">Tenantbeheer</a></li>
                                 }
-                                @if (header.HasMultipleTenants)
+                                @if (header.HasMultipleTenants && !isSingleUserDesktop)
                                 {
                                     <li><a class="dropdown-item" asp-page="/Account/Tenants">Tenant kiezen</a></li>
                                 }
@@ -115,6 +148,25 @@
         </nav>
     </header>
     <div class="container">
+        @if (updateCheck.IsAvailable)
+        {
+            <div class="alert alert-info d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2" role="status">
+                <div>
+                    <strong>Nieuwe versie beschikbaar:</strong>
+                    versie @updateCheck.LatestVersion is beschikbaar. Je gebruikt versie @updateCheck.CurrentVersion.
+                </div>
+                <div class="d-flex gap-2">
+                    @if (!string.IsNullOrWhiteSpace(updateCheck.DownloadUrl))
+                    {
+                        <a class="btn btn-sm btn-primary" href="@updateCheck.DownloadUrl" target="_blank" rel="noopener">Downloaden</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(updateCheck.ReleaseNotesUrl))
+                    {
+                        <a class="btn btn-sm btn-outline-secondary" href="@updateCheck.ReleaseNotesUrl" target="_blank" rel="noopener">Info</a>
+                    }
+                </div>
+            </div>
+        }
         <main role="main" class="pb-3">
             @RenderBody()
         </main>
@@ -133,6 +185,8 @@
                         <dd class="col-sm-8">@ApplicationInfo.Product</dd>
                         <dt class="col-sm-4">Versie</dt>
                         <dd class="col-sm-8">@ApplicationInfo.Version</dd>
+                        <dt class="col-sm-4">Modus</dt>
+                        <dd class="col-sm-8">@(isSingleUserDesktop ? "Lokale desktop" : "Multi-tenant")</dd>
                         <dt class="col-sm-4">Bedrijf</dt>
                         <dd class="col-sm-8">@ApplicationInfo.Company</dd>
                         <dt class="col-sm-4">Copyright</dt>
@@ -140,7 +194,33 @@
                         <dt class="col-sm-4">Technologie</dt>
                         <dd class="col-sm-8">@ApplicationInfo.Framework</dd>
                         <dt class="col-sm-4">Database</dt>
-                        <dd class="col-sm-8">MySQL/MariaDB</dd>
+                        <dd class="col-sm-8">@databaseDisplay</dd>
+                        <dt class="col-sm-4">Licentie</dt>
+                        <dd class="col-sm-8">
+                            <a href="https://www.gnu.org/licenses/agpl-3.0.html" target="_blank" rel="noopener">@ApplicationInfo.License</a>
+                        </dd>
+                        <dt class="col-sm-4">Broncode</dt>
+                        <dd class="col-sm-8">
+                            <a href="@ApplicationInfo.SourceUrl" target="_blank" rel="noopener">@ApplicationInfo.SourceUrl</a>
+                        </dd>
+                        @if (updateCheck.IsEnabled)
+                        {
+                            <dt class="col-sm-4">Updates</dt>
+                            <dd class="col-sm-8">
+                                @if (updateCheck.IsAvailable)
+                                {
+                                    <span>Nieuwe versie @updateCheck.LatestVersion beschikbaar.</span>
+                                    @if (!string.IsNullOrWhiteSpace(updateCheck.DownloadUrl))
+                                    {
+                                        <a href="@updateCheck.DownloadUrl" target="_blank" rel="noopener">Downloaden</a>
+                                    }
+                                }
+                                else
+                                {
+                                    <span>Geen nieuwere versie gevonden.</span>
+                                }
+                            </dd>
+                        }
                     </dl>
                 </div>
                 <div class="modal-footer">
@@ -168,9 +248,9 @@
         </div>
     </div>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="/lib/jquery/dist/jquery.min.js"></script>
+    <script src="/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/site.js"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

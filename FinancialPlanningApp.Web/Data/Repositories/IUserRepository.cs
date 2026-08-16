@@ -5,6 +5,7 @@ namespace FinancialPlanningApp.Web.Data.Repositories;
 public interface IUserRepository
 {
     Task<AppUser?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+    Task<int> CountUsersAsync(CancellationToken cancellationToken = default);
     Task<long> CreateAsync(string email, string passwordHash, string? firstName, string? lastName, string? avatarUrl, CancellationToken cancellationToken = default);
     Task EnsureDefaultTenantForUserAsync(long userId, string email, CancellationToken cancellationToken = default);
     Task<long?> GetDefaultTenantIdAsync(long userId, CancellationToken cancellationToken = default);

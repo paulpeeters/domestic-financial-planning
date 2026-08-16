@@ -5,7 +5,10 @@ using System.ComponentModel.DataAnnotations;
 
 namespace FinancialPlanningApp.Web.Pages.Account;
 
-public class RegisterModel(IAuthService authService, IApplicationSettingsService applicationSettingsService) : PageModel
+public class RegisterModel(
+    IAuthService authService,
+    IApplicationSettingsService applicationSettingsService,
+    IDesktopBootstrapService desktopBootstrapService) : PageModel
 {
     [BindProperty]
     public RegisterInput Input { get; set; } = new();
@@ -28,13 +31,37 @@ public class RegisterModel(IAuthService authService, IApplicationSettingsService
 
     public bool IsSelfRegistrationEnabled { get; private set; } = true;
 
-    public async Task OnGetAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
+        if (await desktopBootstrapService.IsSetupRequiredAsync(cancellationToken))
+        {
+            return RedirectToPage("/Account/DesktopSetup");
+        }
+
+        if (desktopBootstrapService.IsEnabled)
+        {
+            IsSelfRegistrationEnabled = false;
+            return Page();
+        }
+
         IsSelfRegistrationEnabled = await applicationSettingsService.GetAllowSelfRegistrationAsync(cancellationToken);
+        return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(CancellationToken cancellationToken)
     {
+        if (await desktopBootstrapService.IsSetupRequiredAsync(cancellationToken))
+        {
+            return RedirectToPage("/Account/DesktopSetup");
+        }
+
+        if (desktopBootstrapService.IsEnabled)
+        {
+            ModelState.AddModelError(string.Empty, "Registratie is niet beschikbaar in desktopmodus.");
+            IsSelfRegistrationEnabled = false;
+            return Page();
+        }
+
         IsSelfRegistrationEnabled = await applicationSettingsService.GetAllowSelfRegistrationAsync(cancellationToken);
         if (!IsSelfRegistrationEnabled)
         {

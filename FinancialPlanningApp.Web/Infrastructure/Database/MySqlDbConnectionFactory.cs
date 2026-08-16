@@ -9,7 +9,7 @@ public interface IDbConnectionFactory
     Task<IDbConnection> CreateOpenConnectionAsync(CancellationToken cancellationToken = default);
 }
 
-public sealed class MySqlDbConnectionFactory(IOptions<DatabaseOptions> options) : IDbConnectionFactory
+public sealed class MySqlDbConnectionFactory(IOptions<DatabaseOptions> options)
 {
     public async Task<IDbConnection> CreateOpenConnectionAsync(CancellationToken cancellationToken = default)
     {

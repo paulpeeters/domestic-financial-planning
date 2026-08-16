@@ -1,0 +1,72 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.DesktopSetupModel
+@{
+    ViewData["Title"] = "Lokale installatie";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-xl-6">
+        <h1>Financiële planning instellen</h1>
+        <p class="text-muted">Maak je lokale account en huishouden aan. Alles wordt op deze computer bewaard.</p>
+
+        <form method="post" class="mt-4">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+            <section class="border rounded p-3 mb-3">
+                <h2 class="h5">Lokale beheerder</h2>
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label"></label>
+                    <input asp-for="Input.Email" class="form-control" autocomplete="username" />
+                    <span asp-validation-for="Input.Email" class="text-danger"></span>
+                    <div class="form-text">Dit adres wordt alleen gebruikt om lokaal aan te melden. Mailinstellingen zijn niet nodig.</div>
+                </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="Input.FirstName" class="form-label"></label>
+                        <input asp-for="Input.FirstName" class="form-control" autocomplete="given-name" />
+                        <span asp-validation-for="Input.FirstName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.LastName" class="form-label"></label>
+                        <input asp-for="Input.LastName" class="form-control" autocomplete="family-name" />
+                        <span asp-validation-for="Input.LastName" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label asp-for="Input.Password" class="form-label"></label>
+                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Input.Password" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Input.ConfirmPassword" class="form-label"></label>
+                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" />
+                        <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="border rounded p-3 mb-3">
+                <h2 class="h5">Huishouden</h2>
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label asp-for="Input.TenantName" class="form-label"></label>
+                        <input asp-for="Input.TenantName" class="form-control" />
+                        <span asp-validation-for="Input.TenantName" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label asp-for="Input.TenantShortName" class="form-label"></label>
+                        <input asp-for="Input.TenantShortName" class="form-control" maxlength="10" />
+                        <span asp-validation-for="Input.TenantShortName" class="text-danger"></span>
+                    </div>
+                </div>
+            </section>
+
+            <button type="submit" class="btn btn-primary">Installatie voltooien</button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

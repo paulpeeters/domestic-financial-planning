@@ -1,0 +1,31 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.DesktopDataModel
+@{
+    ViewData["Title"] = "Data en backup";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-2 mb-3">
+    <div>
+        <h1>Data en backup</h1>
+        <p class="text-muted mb-0">Bekijk waar de lokale database staat en maak een backupbestand.</p>
+    </div>
+</div>
+
+<section class="border rounded p-3 mb-3">
+    <h2 class="h5">Lokale database</h2>
+    <dl class="row mb-0">
+        <dt class="col-md-3">Databasebestand</dt>
+        <dd class="col-md-9"><code class="text-break">@Model.DataInfo.DatabasePath</code></dd>
+        <dt class="col-md-3">Map</dt>
+        <dd class="col-md-9"><code class="text-break">@Model.DataInfo.DatabaseDirectory</code></dd>
+        <dt class="col-md-3">Status</dt>
+        <dd class="col-md-9">@(Model.DataInfo.DatabaseExists ? "Aanwezig" : "Nog niet aangemaakt")</dd>
+        <dt class="col-md-3">Backupmap</dt>
+        <dd class="col-md-9"><code class="text-break">@Model.DataInfo.BackupDirectory</code></dd>
+    </dl>
+</section>
+
+<form method="post" asp-page-handler="Backup">
+    <button type="submit" class="btn btn-primary" disabled="@(!Model.DataInfo.DatabaseExists)">Backup downloaden</button>
+    <a asp-page="/Index" class="btn btn-outline-secondary">Terug</a>
+</form>

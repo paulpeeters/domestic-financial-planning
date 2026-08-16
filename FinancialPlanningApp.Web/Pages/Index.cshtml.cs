@@ -3,6 +3,7 @@ using FinancialPlanningApp.Web.Services.Auth;
 using FinancialPlanningApp.Web.Services.Imports;
 using FinancialPlanningApp.Web.Services.Payments;
 using FinancialPlanningApp.Web.Services.Reconciliation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace FinancialPlanningApp.Web.Pages;
@@ -11,14 +12,20 @@ public class IndexModel(
     IReconciliationService reconciliationService,
     IAccountMonthlyBalanceService accountMonthlyBalanceService,
     IRecurringPaymentService recurringPaymentService,
-    IApplicationSettingsService applicationSettingsService) : PageModel
+    IApplicationSettingsService applicationSettingsService,
+    IDesktopBootstrapService desktopBootstrapService) : PageModel
 {
     public DashboardSummary Dashboard { get; private set; } = new();
     public IReadOnlyList<DashboardMonthRow> Months { get; private set; } = [];
     public IReadOnlyList<DashboardMonthRow> FocusMonths { get; private set; } = [];
 
-    public async Task OnGetAsync(CancellationToken cancellationToken)
+    public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
+        if (await desktopBootstrapService.IsSetupRequiredAsync(cancellationToken))
+        {
+            return RedirectToPage("/Account/DesktopSetup");
+        }
+
         if (User.Identity?.IsAuthenticated == true)
         {
             var today = DateTime.Today;
@@ -151,6 +158,8 @@ public class IndexModel(
                 })
                 .ToList();
         }
+
+        return Page();
     }
 
     private async Task<Dictionary<int, PendingMonthAmounts>> BuildPendingByMonthAsync(

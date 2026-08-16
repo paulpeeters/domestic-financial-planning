@@ -1,0 +1,26 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Account.ShutdownModel
+@{
+    ViewData["Title"] = "App afsluiten";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-xl-6">
+        <h1>App afsluiten</h1>
+
+        @if (Request.Method == "POST")
+        {
+            <div class="alert alert-success">
+                De lokale app wordt afgesloten. Je mag dit browservenster sluiten.
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Sluit de lokale financiële planning op deze computer af.</p>
+            <form method="post">
+                <button type="submit" class="btn btn-danger">App afsluiten</button>
+                <a asp-page="/Index" class="btn btn-outline-secondary">Annuleren</a>
+            </form>
+        }
+    </div>
+</div>
