@@ -174,8 +174,10 @@ dotnet publish .\FinancialPlanningApp.Web\FinancialPlanningApp.Web.csproj /p:Pub
 Dat profiel publiceert self-contained naar:
 
 ```text
-C:\DATA\Projects\DEPLOY\FinancialPlanning\Desktop
+<deploy-root>\Desktop
 ```
+
+Standaard gebruiken de scripts en publish-profielen een sibling-map `DEPLOY\FinancialPlanning` naast de map waarin deze repository staat. Je kan dit overschrijven met de environment variable `FINANCIAL_PLANNING_DEPLOY_ROOT` of met de MSBuild-property `FinancialPlanningDeployRoot`.
 
 De desktop-publish schrijft een `desktop.mode` markerbestand mee. Daardoor start de gepubliceerde `.exe` automatisch in desktopmodus met SQLite, zonder dat de gebruiker zelf environment variables moet instellen. Het bestaande `Standard.pubxml` profiel blijft bedoeld voor serverhosting.
 
@@ -198,7 +200,7 @@ Daarna kan de installer worden gebouwd met:
 Het script voert eerst de desktop-publish uit, controleert dat er geen lokale secrets in de publish-output zitten, en compileert daarna:
 
 ```text
-C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
+<deploy-root>\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
 ```
 
 De installer installeert per gebruiker onder `%LOCALAPPDATA%\Programs\Domestic Financial Planning`, maakt een startmenu-snelkoppeling, en laat de SQLite-data bewust staan onder `%LOCALAPPDATA%\DomesticFinancialPlanning`.

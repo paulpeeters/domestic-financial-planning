@@ -2,8 +2,8 @@
 param(
     [string]$Configuration = "Release",
     [string]$PublishProfile = "Standard",
-    [string]$PublishDir = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Server",
-    [string]$PackageOutputDir = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Packages",
+    [string]$PublishDir = "",
+    [string]$PackageOutputDir = "",
     [switch]$SkipPublish
 )
 
@@ -12,6 +12,14 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot "FinancialPlanningApp.Web\FinancialPlanningApp.Web.csproj"
 $stageRoot = Join-Path $repoRoot "artifacts\server-zip-stage"
+
+function Resolve-DeployRoot {
+    if (-not [string]::IsNullOrWhiteSpace($env:FINANCIAL_PLANNING_DEPLOY_ROOT)) {
+        return $env:FINANCIAL_PLANNING_DEPLOY_ROOT
+    }
+
+    return Join-Path (Split-Path -Parent $repoRoot) "DEPLOY\FinancialPlanning"
+}
 
 function Get-ProjectVersion {
     param([string]$Path)
@@ -79,6 +87,15 @@ function Copy-PackageFiles {
         New-Item -ItemType Directory -Force -Path (Split-Path -Parent $targetPath) | Out-Null
         Copy-Item -LiteralPath $_.FullName -Destination $targetPath -Force
     }
+}
+
+$deployRoot = Resolve-DeployRoot
+if ([string]::IsNullOrWhiteSpace($PublishDir)) {
+    $PublishDir = Join-Path $deployRoot "Server"
+}
+
+if ([string]::IsNullOrWhiteSpace($PackageOutputDir)) {
+    $PackageOutputDir = Join-Path $deployRoot "Packages"
 }
 
 if (-not $SkipPublish) {

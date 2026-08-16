@@ -2,8 +2,8 @@
 param(
     [string]$Configuration = "Release",
     [string]$PublishProfile = "Desktop",
-    [string]$PublishDir = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Desktop",
-    [string]$InstallerOutputDir = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer",
+    [string]$PublishDir = "",
+    [string]$InstallerOutputDir = "",
     [switch]$SkipPublish
 )
 
@@ -12,6 +12,14 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot "FinancialPlanningApp.Web\FinancialPlanningApp.Web.csproj"
 $installerScript = Join-Path $repoRoot "installer\windows\DomesticFinancialPlanning.iss"
+
+function Resolve-DeployRoot {
+    if (-not [string]::IsNullOrWhiteSpace($env:FINANCIAL_PLANNING_DEPLOY_ROOT)) {
+        return $env:FINANCIAL_PLANNING_DEPLOY_ROOT
+    }
+
+    return Join-Path (Split-Path -Parent $repoRoot) "DEPLOY\FinancialPlanning"
+}
 
 function Get-ProjectVersion {
     param([string]$Path)
@@ -48,6 +56,15 @@ function Resolve-InnoCompiler {
     }
 
     throw "ISCC.exe werd niet gevonden. Installeer Inno Setup 7 of 6 en voer dit script opnieuw uit. Via winget kan dat met: winget install JRSoftware.InnoSetup"
+}
+
+$deployRoot = Resolve-DeployRoot
+if ([string]::IsNullOrWhiteSpace($PublishDir)) {
+    $PublishDir = Join-Path $deployRoot "Desktop"
+}
+
+if ([string]::IsNullOrWhiteSpace($InstallerOutputDir)) {
+    $InstallerOutputDir = Join-Path $deployRoot "Installer"
 }
 
 if (-not $SkipPublish) {

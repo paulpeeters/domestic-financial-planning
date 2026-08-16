@@ -1,12 +1,34 @@
 [CmdletBinding()]
 param(
     [string]$Version = "1.0.1.0",
-    [string]$InstallerPath = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe",
-    [string]$ServerZipPath = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip",
-    [string]$OutputPath = "C:\DATA\Projects\FinancialPlanning\website\downloads\checksums.txt"
+    [string]$InstallerPath = "",
+    [string]$ServerZipPath = "",
+    [string]$OutputPath = ""
 )
 
 $ErrorActionPreference = "Stop"
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+function Resolve-DeployRoot {
+    if (-not [string]::IsNullOrWhiteSpace($env:FINANCIAL_PLANNING_DEPLOY_ROOT)) {
+        return $env:FINANCIAL_PLANNING_DEPLOY_ROOT
+    }
+
+    return Join-Path (Split-Path -Parent $repoRoot) "DEPLOY\FinancialPlanning"
+}
+
+$deployRoot = Resolve-DeployRoot
+if ([string]::IsNullOrWhiteSpace($InstallerPath)) {
+    $InstallerPath = Join-Path $deployRoot "Installer\DomesticFinancialPlanning-Setup-$Version.exe"
+}
+
+if ([string]::IsNullOrWhiteSpace($ServerZipPath)) {
+    $ServerZipPath = Join-Path $deployRoot "Packages\DomesticFinancialPlanning-Server-$Version.zip"
+}
+
+if ([string]::IsNullOrWhiteSpace($OutputPath)) {
+    $OutputPath = Join-Path $repoRoot "website\downloads\checksums.txt"
+}
 
 $items = @(
     @{

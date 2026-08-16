@@ -20,6 +20,14 @@ $projectPath = Join-Path $repoRoot "FinancialPlanningApp.Web\FinancialPlanningAp
 $websiteRoot = Join-Path $repoRoot "website"
 $stageRoot = Join-Path $repoRoot "artifacts\website-upload"
 
+function Resolve-DeployRoot {
+    if (-not [string]::IsNullOrWhiteSpace($env:FINANCIAL_PLANNING_DEPLOY_ROOT)) {
+        return $env:FINANCIAL_PLANNING_DEPLOY_ROOT
+    }
+
+    return Join-Path (Split-Path -Parent $repoRoot) "DEPLOY\FinancialPlanning"
+}
+
 function Get-ProjectVersion {
     param([string]$Path)
 
@@ -67,8 +75,9 @@ if ([string]::IsNullOrWhiteSpace($Version)) {
     $Version = Get-ProjectVersion -Path $projectPath
 }
 
-$installerPath = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer\DomesticFinancialPlanning-Setup-$Version.exe"
-$serverZipPath = "C:\DATA\Projects\DEPLOY\FinancialPlanning\Packages\DomesticFinancialPlanning-Server-$Version.zip"
+$deployRoot = Resolve-DeployRoot
+$installerPath = Join-Path $deployRoot "Installer\DomesticFinancialPlanning-Setup-$Version.exe"
+$serverZipPath = Join-Path $deployRoot "Packages\DomesticFinancialPlanning-Server-$Version.zip"
 $checksumsPath = Join-Path $websiteRoot "downloads\checksums.txt"
 
 if (-not $SkipBuild) {

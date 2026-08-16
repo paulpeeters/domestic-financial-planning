@@ -61,7 +61,7 @@ Als SSH/SFTP beschikbaar is, kan dezelfde stap ook uploaden:
 Met een aparte host/user, andere poort of sleutel:
 
 ```powershell
-.\tools\publish-website.ps1 -UploadMode Sftp -RemoteHost financialplanning.pware.be -RemoteUser financialplanning -RemotePath . -Port 22 -IdentityFile C:\Users\paul\.ssh\financialplanning_website_ed25519
+.\tools\publish-website.ps1 -UploadMode Sftp -RemoteHost example.org -RemoteUser webuser -RemotePath . -Port 22 -IdentityFile <path-to-private-key>
 ```
 
 Gebruik `-DryRun` om eerst de SFTP-uploadstap te tonen zonder upload:
@@ -72,11 +72,11 @@ Gebruik `-DryRun` om eerst de SFTP-uploadstap te tonen zonder upload:
 
 ## DEPLOY-map scripts
 
-Naast de bestaande serverdeployscripts staan er ook website-deployscripts in:
+Je kan optioneel wrapper-scripts buiten de repository bewaren, bijvoorbeeld in je eigen DEPLOY-map:
 
 ```text
-C:\DATA\Projects\DEPLOY\FinancialPlanning\deploy_financialplanning_website.cmd
-C:\DATA\Projects\DEPLOY\FinancialPlanning\deploy_financialplanning_website.sh
+<deploy-root>\deploy_financialplanning_website.cmd
+<deploy-root>\deploy_financialplanning_website.ps1
 ```
 
 Gebruik op Windows normaal de `.cmd`. Die:
@@ -103,7 +103,7 @@ Voor de desktopversie:
 Output:
 
 ```text
-C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
+<deploy-root>\Installer\DomesticFinancialPlanning-Setup-1.0.1.0.exe
 ```
 
 Upload dit bestand naar:
@@ -123,7 +123,7 @@ Voor de serverversie:
 Output:
 
 ```text
-C:\DATA\Projects\DEPLOY\FinancialPlanning\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip
+<deploy-root>\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip
 ```
 
 Upload dit bestand naar:
@@ -135,7 +135,7 @@ downloads/DomesticFinancialPlanning-Server-1.0.1.0.zip
 Het serverpackage-script:
 
 - publiceert met `PublishProfile=Standard`;
-- schrijft naar `C:\DATA\Projects\DEPLOY\FinancialPlanning\Server`;
+- schrijft naar `<deploy-root>\Server`;
 - weigert te packagen als echte secrets worden gevonden;
 - sluit `secrets.json`, `appsettings.Local.json`, `appsettings.Development.json`, `appsettings.Desktop.json`, `desktop.mode`, `.pdb` en `.map` uit;
 - laat `secrets.template.json` wel toe als documentatie voor configuratie.
@@ -144,7 +144,7 @@ Controleer voor upload eventueel zelf nog:
 
 ```powershell
 Add-Type -AssemblyName System.IO.Compression.FileSystem
-[IO.Compression.ZipFile]::OpenRead("C:\DATA\Projects\DEPLOY\FinancialPlanning\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip").Entries |
+[IO.Compression.ZipFile]::OpenRead("<deploy-root>\Packages\DomesticFinancialPlanning-Server-1.0.1.0.zip").Entries |
   Where-Object { $_.FullName -match "secret|appsettings\.(Development|Desktop|Local)|desktop\.mode" } |
   Select-Object FullName
 ```

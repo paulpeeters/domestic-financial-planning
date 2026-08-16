@@ -1,13 +1,13 @@
 #ifndef ProjectRoot
-#define ProjectRoot "C:\DATA\Projects\FinancialPlanning"
+#define ProjectRoot "..\.."
 #endif
 
 #ifndef SourceDir
-#define SourceDir "C:\DATA\Projects\DEPLOY\FinancialPlanning\Desktop"
+#define SourceDir "..\..\artifacts\publish\Desktop"
 #endif
 
 #ifndef OutputDir
-#define OutputDir "C:\DATA\Projects\DEPLOY\FinancialPlanning\Installer"
+#define OutputDir "..\..\artifacts\installer"
 #endif
 
 #ifndef AppVersion
