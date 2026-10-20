@@ -64,8 +64,8 @@ public interface IReconciliationRepository
     Task<bool> MapExecutionAsync(long userId, long tenantId, long executionId, long templateId, int year, int month, string mappedBy, string? confidenceNote, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MonthlyPaidRow>> GetMonthlyPaidTotalsAsync(long userId, long tenantId, int year, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MonthlyPaidRow>> GetMonthlyPaidTotalsForTenantAsync(long tenantId, int year, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewAsync(long userId, long tenantId, int year, int? month, bool onlyUnmapped, string? search, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewForTenantAsync(long tenantId, int year, int? month, bool onlyUnmapped, string? search, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewAsync(long userId, long tenantId, int year, int? month, bool onlyUnmapped, string? search, bool filterByMappedPeriod, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewForTenantAsync(long tenantId, int year, int? month, bool onlyUnmapped, string? search, bool filterByMappedPeriod, CancellationToken cancellationToken = default);
     Task<bool> SetExecutionMappingAsync(long userId, long tenantId, long executionId, string executionType, string mappingStatus, long? mappedTemplateId, int? mappedPeriodYear, int? mappedPeriodMonth, CancellationToken cancellationToken = default);
     Task<bool> UnmapExecutionAsync(long userId, long tenantId, long executionId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TemplateActualTotalRow>> GetTemplateActualTotalsAsync(long userId, long tenantId, int fromYear, int toYear, CancellationToken cancellationToken = default);

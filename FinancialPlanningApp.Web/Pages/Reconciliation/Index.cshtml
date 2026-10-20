@@ -12,12 +12,12 @@
     <a asp-page="/Reconciliation/Manual" class="btn btn-outline-primary">Manueel afpunten</a>
 </div>
 
-<form method="get" class="row g-2 mb-3">
-    <div class="col-md-2">
+<form method="get" class="d-flex flex-wrap gap-2 align-items-end mb-3">
+    <div style="width: 7rem;">
         <label asp-for="Year" class="form-label">Jaar</label>
         <input asp-for="Year" class="form-control" />
     </div>
-    <div class="col-md-2">
+    <div style="width: 8rem;">
         <label asp-for="Month" class="form-label">Maand</label>
         <select asp-for="Month" class="form-select">
             <option value="">Alle</option>
@@ -27,15 +27,22 @@
             }
         </select>
     </div>
-    <div class="col-md-3">
+    <div style="width: 12rem;">
+        <label asp-for="DateBasis" class="form-label">Datumfilter op</label>
+        <select asp-for="DateBasis" class="form-select" title="Mapdatum is alleen beschikbaar voor gemapte transacties.">
+            <option value="TransactionDate">Transactiedatum</option>
+            <option value="MappedPeriod">Mapdatum</option>
+        </select>
+    </div>
+    <div class="flex-grow-1" style="min-width: 15rem;">
         <label asp-for="Search" class="form-label">Omschrijving / gemapte betaling</label>
         <input asp-for="Search" class="form-control" placeholder="bv. netflix, water, keyword" />
     </div>
-    <div class="col-md-3 form-check mt-4 ms-3">
+    <div class="form-check mb-2 ms-2 me-2">
         <input asp-for="OnlyUnmapped" class="form-check-input" />
         <label asp-for="OnlyUnmapped" class="form-check-label">Alleen ongemapt</label>
     </div>
-    <div class="col-md-2 mt-4">
+    <div>
         <button type="submit" class="btn btn-outline-secondary">Filteren</button>
     </div>
 </form>
@@ -43,7 +50,8 @@
 <table class="table table-sm table-striped align-middle">
     <thead>
         <tr>
-            <th>Datum</th>
+            <th>Transactiedatum</th>
+            <th>Mapdatum</th>
             <th>Omschrijving</th>
             <th>Bedrag</th>
             <th style="width: 120px;">Bron</th>
@@ -57,6 +65,7 @@
     {
         <tr>
             <td>@row.ExecutionDate.ToString("yyyy-MM-dd")</td>
+            <td>@(row.MappedPeriodYear.HasValue && row.MappedPeriodMonth.HasValue ? $"{row.MappedPeriodYear}-{row.MappedPeriodMonth:00}" : "-")</td>
             <td>
                 <div>@row.Description</div>
                 @if (!string.IsNullOrWhiteSpace(row.DescriptionDetails))
@@ -71,6 +80,7 @@
                 <form method="post" asp-page-handler="Map">
                     <input type="hidden" name="Year" value="@Model.Year" />
                     <input type="hidden" name="Month" value="@Model.Month" />
+                    <input type="hidden" name="DateBasis" value="@Model.DateBasis" />
                     <input type="hidden" name="OnlyUnmapped" value="@(Model.OnlyUnmapped.ToString().ToLowerInvariant())" />
                     <input type="hidden" name="Search" value="@Model.Search" />
                     <input type="hidden" name="ExecutionId" value="@row.ExecutionId" />

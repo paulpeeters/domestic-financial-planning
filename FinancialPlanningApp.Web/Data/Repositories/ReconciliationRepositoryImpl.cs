@@ -155,10 +155,10 @@ public sealed class ReconciliationRepository(
         return rows.ToList();
     }
 
-    public async Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewAsync(long userId, long tenantId, int year, int? month, bool onlyUnmapped, string? search, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewAsync(long userId, long tenantId, int year, int? month, bool onlyUnmapped, string? search, bool filterByMappedPeriod, CancellationToken cancellationToken = default)
     {
-        var yearExpression = AliasedExecutionYearExpression;
-        var monthExpression = AliasedExecutionMonthExpression;
+        var yearExpression = filterByMappedPeriod ? "e.mapped_period_year" : AliasedExecutionYearExpression;
+        var monthExpression = filterByMappedPeriod ? "e.mapped_period_month" : AliasedExecutionMonthExpression;
         var descriptionSearch = SearchExpression("e.description");
         var notesSearch = SearchExpression("e.notes");
         var templateDescriptionSearch = SearchExpression("t.description");
@@ -184,7 +184,7 @@ public sealed class ReconciliationRepository(
               OR {templateDescriptionSearch}
               OR {keywordSearch}
           )
-        ORDER BY e.execution_date ASC, e.id ASC;
+        ORDER BY {yearExpression} ASC, {monthExpression} ASC, e.execution_date ASC, e.id ASC;
         """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);
@@ -200,10 +200,10 @@ public sealed class ReconciliationRepository(
         return rows.ToList();
     }
 
-    public async Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewForTenantAsync(long tenantId, int year, int? month, bool onlyUnmapped, string? search, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ReconciliationExecutionRow>> GetExecutionsForReviewForTenantAsync(long tenantId, int year, int? month, bool onlyUnmapped, string? search, bool filterByMappedPeriod, CancellationToken cancellationToken = default)
     {
-        var yearExpression = AliasedExecutionYearExpression;
-        var monthExpression = AliasedExecutionMonthExpression;
+        var yearExpression = filterByMappedPeriod ? "e.mapped_period_year" : AliasedExecutionYearExpression;
+        var monthExpression = filterByMappedPeriod ? "e.mapped_period_month" : AliasedExecutionMonthExpression;
         var descriptionSearch = SearchExpression("e.description");
         var notesSearch = SearchExpression("e.notes");
         var templateDescriptionSearch = SearchExpression("t.description");
@@ -227,7 +227,7 @@ public sealed class ReconciliationRepository(
               OR {templateDescriptionSearch}
               OR {keywordSearch}
           )
-        ORDER BY e.execution_date ASC, e.id ASC;
+        ORDER BY {yearExpression} ASC, {monthExpression} ASC, e.execution_date ASC, e.id ASC;
         """;
 
         using var connection = await connectionFactory.CreateOpenConnectionAsync(cancellationToken);

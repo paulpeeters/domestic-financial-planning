@@ -6,6 +6,12 @@ using Microsoft.Extensions.Options;
 
 namespace FinancialPlanningApp.Web.Services.Reconciliation;
 
+public enum ReconciliationDateBasis
+{
+    TransactionDate,
+    MappedPeriod
+}
+
 public sealed class ExpectedOccurrence
 {
     public long TemplateId { get; init; }
@@ -90,7 +96,7 @@ public interface IReconciliationService
     Task<IReadOnlyList<MissingPaymentSuggestion>> GetMissingSuggestionsAsync(int year, CancellationToken cancellationToken = default);
     Task<bool> MapExecutionAsync(long executionId, long templateId, int year, int month, string? note, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MonthlyPlanPaidRow>> GetMonthlyPlannedVsPaidAsync(int year, CancellationToken cancellationToken = default);
-    Task<IReadOnlyList<ReconciliationReviewRow>> GetReviewRowsAsync(int year, int? month, bool onlyUnmapped, string? search, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ReconciliationReviewRow>> GetReviewRowsAsync(int year, int? month, bool onlyUnmapped, string? search, ReconciliationDateBasis dateBasis = ReconciliationDateBasis.TransactionDate, CancellationToken cancellationToken = default);
     Task<bool> ApplyMappingOptionAsync(long executionId, string optionValue, int mapYear, int mapMonth, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<TemplateActualTotal>> GetTemplateActualTotalsForYearsAsync(int fromYear, int toYear, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MappedExpenseExecution>> GetMappedExpenseExecutionsForPeriodAsync(int year, int month, CancellationToken cancellationToken = default);
@@ -141,7 +147,7 @@ public sealed class ReconciliationService(
         var mappedByMonth = paid.ToDictionary(x => x.Month, x => x.PaidTotal);
         var depositedByMonth = paid.ToDictionary(x => x.Month, x => x.DepositedTotal);
 
-        var executions = await reconciliationRepository.GetExecutionsForReviewForTenantAsync(tenantId, year, null, false, null, cancellationToken);
+        var executions = await reconciliationRepository.GetExecutionsForReviewForTenantAsync(tenantId, year, null, false, null, false, cancellationToken);
         var paidByTransactionMonth = executions
             .Where(e => string.Equals(e.MappingStatus, "MAPPED", StringComparison.OrdinalIgnoreCase))
             .Where(e => !string.Equals(e.ExecutionType, "PLANNED_DEPOSIT", StringComparison.OrdinalIgnoreCase))
@@ -187,11 +193,12 @@ public sealed class ReconciliationService(
         return rows;
     }
 
-    public async Task<IReadOnlyList<ReconciliationReviewRow>> GetReviewRowsAsync(int year, int? month, bool onlyUnmapped, string? search, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ReconciliationReviewRow>> GetReviewRowsAsync(int year, int? month, bool onlyUnmapped, string? search, ReconciliationDateBasis dateBasis = ReconciliationDateBasis.TransactionDate, CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
         var tenantId = GetCurrentTenantId();
-        var executions = await reconciliationRepository.GetExecutionsForReviewAsync(userId, tenantId, year, month, onlyUnmapped, search, cancellationToken);
+        var filterByMappedPeriod = dateBasis == ReconciliationDateBasis.MappedPeriod;
+        var executions = await reconciliationRepository.GetExecutionsForReviewAsync(userId, tenantId, year, month, onlyUnmapped, search, filterByMappedPeriod, cancellationToken);
         var templates = (await recurringPaymentService.ListAllForCurrentUserAsync(true, cancellationToken)).ToList();
 
         var rows = new List<ReconciliationReviewRow>();

@@ -16,6 +16,9 @@ public class IndexModel(IReconciliationService reconciliationService) : PageMode
     public int? Month { get; set; }
 
     [BindProperty(SupportsGet = true)]
+    public ReconciliationDateBasis DateBasis { get; set; } = ReconciliationDateBasis.TransactionDate;
+
+    [BindProperty(SupportsGet = true)]
     public bool OnlyUnmapped { get; set; } = true;
 
     [BindProperty(SupportsGet = true)]
@@ -31,7 +34,12 @@ public class IndexModel(IReconciliationService reconciliationService) : PageMode
 
     public async Task OnGetAsync(CancellationToken cancellationToken)
     {
-        Rows = await reconciliationService.GetReviewRowsAsync(Year, Month, OnlyUnmapped, Search, cancellationToken);
+        if (DateBasis == ReconciliationDateBasis.MappedPeriod)
+        {
+            OnlyUnmapped = false;
+        }
+
+        Rows = await reconciliationService.GetReviewRowsAsync(Year, Month, OnlyUnmapped, Search, DateBasis, cancellationToken);
     }
 
     public async Task<IActionResult> OnPostMapAsync(
@@ -60,6 +68,7 @@ public class IndexModel(IReconciliationService reconciliationService) : PageMode
         var routeValues = new RouteValueDictionary
         {
             ["Year"] = Year,
+            ["DateBasis"] = DateBasis.ToString(),
             ["OnlyUnmapped"] = OnlyUnmapped ? "true" : "false"
         };
 
