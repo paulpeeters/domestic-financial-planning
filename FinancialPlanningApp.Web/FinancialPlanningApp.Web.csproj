@@ -37,4 +37,8 @@
 		<None Remove="secrets.json" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Include=".github\workflows\release.yml" />
+	</ItemGroup>
+
 </Project>
