@@ -1,0 +1,38 @@
+﻿name: Build and Release .NET App
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Activeert de pipeline automatisch wanneer je een tag pusht (bijv. v1.0.0)
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write # Cruciaal: geeft GitHub Actions rechten om een release aan te maken en bestanden te uploaden
+
+    steps:
+      - name: Code ophalen (Checkout)
+        uses: actions/checkout@v4
+
+      - name: .NET SDK instellen
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x' # Pas dit aan naar de .NET versie die jouw app gebruikt (bijv. 6.0, 7.0 of 8.0)
+
+      - name: Afhankelijkheden herstellen
+        run: dotnet restore
+
+      - name: App publiceren (Release)
+        # --self-contained true zorgt ervoor dat gebruikers geen apart .NET runtime hoeven te installeren
+        run: dotnet publish -c Release -o ./publish --self-contained true -r win-x64
+
+      - name: Bestanden inpakken als ZIP
+        run: Compress-Archive -Path ./publish/* -DestinationPath ./DomesticFinancialPlanning-win-x64.zip
+
+      - name: GitHub Release aanmaken en uploaden
+        uses: softprops/action-gh-release@v2
+        with:
+          files: DomesticFinancialPlanning-win-x64.zip
+          generate_release_notes: true # Genereert automatisch een changelog op basis van je commitberichten
