@@ -41,6 +41,33 @@ function Get-ProjectVersion {
     return "1.0.4.0"
 }
 
+function Set-StagedServerDownloadMetadata {
+    param(
+        [string]$Path,
+        [string]$Version,
+        [string]$ServerZipPath
+    )
+
+    $content = Get-Content -LiteralPath $Path -Raw
+    $downloadPattern = '/downloads/DomesticFinancialPlanning-Server-[^"'']+\.zip'
+    $downloadReplacement = "/downloads/DomesticFinancialPlanning-Server-$Version.zip"
+    $updated = [regex]::Replace($content, $downloadPattern, $downloadReplacement)
+
+    if ($updated -eq $content -and $content -notmatch [regex]::Escape($downloadReplacement)) {
+        throw "Geen serverdownloadlink gevonden in $Path."
+    }
+
+    $checksum = (Get-FileHash -LiteralPath $ServerZipPath -Algorithm SHA256).Hash
+    $checksumPattern = '<p class="checksum">SHA-256: <code>[A-Fa-f0-9]{64}</code></p>'
+    $checksumReplacement = "<p class=`"checksum`">SHA-256: <code>$checksum</code></p>"
+    $updatedWithChecksum = [regex]::Replace($updated, $checksumPattern, $checksumReplacement)
+    if ($updatedWithChecksum -eq $updated -and $updated -notmatch [regex]::Escape($checksumReplacement)) {
+        throw "Geen serverchecksum gevonden in $Path."
+    }
+
+    Set-Content -LiteralPath $Path -Value $updatedWithChecksum -Encoding UTF8
+}
+
 function Remove-SafeDirectory {
     param([string]$Path)
 
@@ -71,29 +98,33 @@ function Copy-RequiredFile {
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
 }
 
+$projectVersion = Get-ProjectVersion -Path $projectPath
 if ([string]::IsNullOrWhiteSpace($Version)) {
-    $Version = Get-ProjectVersion -Path $projectPath
+    $Version = $projectVersion
+}
+elseif ($Version -ne $projectVersion) {
+    throw "De opgegeven websiteversie ($Version) verschilt van de projectversie ($projectVersion)."
 }
 
 $deployRoot = Resolve-DeployRoot
-$installerPath = Join-Path $deployRoot "Installer\DomesticFinancialPlanning-Setup-$Version.exe"
 $serverZipPath = Join-Path $deployRoot "Packages\DomesticFinancialPlanning-Server-$Version.zip"
 $checksumsPath = Join-Path $websiteRoot "downloads\checksums.txt"
 
 if (-not $SkipBuild) {
-    & (Join-Path $PSScriptRoot "package-desktop-inno.ps1")
     & (Join-Path $PSScriptRoot "package-server-zip.ps1")
-    & (Join-Path $PSScriptRoot "write-release-checksums.ps1") -Version $Version -InstallerPath $installerPath -ServerZipPath $serverZipPath -OutputPath $checksumsPath
+    & (Join-Path $PSScriptRoot "write-release-checksums.ps1") -Version $Version -ServerZipPath $serverZipPath -OutputPath $checksumsPath
 }
 
 Remove-SafeDirectory -Path $stageRoot
 New-Item -ItemType Directory -Force -Path (Join-Path $stageRoot "updates") | Out-Null
 New-Item -ItemType Directory -Force -Path (Join-Path $stageRoot "downloads") | Out-Null
+New-Item -ItemType Directory -Force -Path (Join-Path $stageRoot "privacy") | Out-Null
 
 Copy-RequiredFile -Source (Join-Path $websiteRoot "index.html") -Destination (Join-Path $stageRoot "index.html")
+Set-StagedServerDownloadMetadata -Path (Join-Path $stageRoot "index.html") -Version $Version -ServerZipPath $serverZipPath
+Copy-RequiredFile -Source (Join-Path $websiteRoot "privacy\index.html") -Destination (Join-Path $stageRoot "privacy\index.html")
 Copy-RequiredFile -Source (Join-Path $websiteRoot "updates\latest.json") -Destination (Join-Path $stageRoot "updates\latest.json")
 Copy-RequiredFile -Source $checksumsPath -Destination (Join-Path $stageRoot "downloads\checksums.txt")
-Copy-RequiredFile -Source $installerPath -Destination (Join-Path $stageRoot "downloads\DomesticFinancialPlanning-Setup-$Version.exe")
 Copy-RequiredFile -Source $serverZipPath -Destination (Join-Path $stageRoot "downloads\DomesticFinancialPlanning-Server-$Version.zip")
 
 Write-Host "Website upload staging klaar: $stageRoot"
@@ -148,10 +179,11 @@ if ($UploadMode -eq "Sftp") {
     }
     $commands.Add("-mkdir downloads")
     $commands.Add("-mkdir updates")
+    $commands.Add("-mkdir privacy")
     $commands.Add("put `"$stageRoot\index.html`" `"index.html`"")
+    $commands.Add("put `"$stageRoot\privacy\index.html`" `"privacy/index.html`"")
     $commands.Add("put `"$stageRoot\updates\latest.json`" `"updates/latest.json`"")
     $commands.Add("put `"$stageRoot\downloads\checksums.txt`" `"downloads/checksums.txt`"")
-    $commands.Add("put `"$stageRoot\downloads\DomesticFinancialPlanning-Setup-$Version.exe`" `"downloads/DomesticFinancialPlanning-Setup-$Version.exe`"")
     $commands.Add("put `"$stageRoot\downloads\DomesticFinancialPlanning-Server-$Version.zip`" `"downloads/DomesticFinancialPlanning-Server-$Version.zip`"")
     $commands.Add("bye")
     $commands | Set-Content -LiteralPath $batchPath -Encoding ASCII

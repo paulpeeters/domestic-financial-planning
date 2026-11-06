@@ -12,6 +12,11 @@
 }
 else
 {
+    var hasPlanningData = Model.Dashboard.ExpectedYearlyCost != 0m
+        || Model.Dashboard.ActualPaidCostsYtd != 0m
+        || Model.Dashboard.ActualProvisionedYtd != 0m
+        || Model.Dashboard.CurrentAccountBalance is not null;
+
     <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-2 mb-4">
         <div>
             <h1 class="h2 mb-1">Dashboard Financiële Planning</h1>
@@ -21,6 +26,50 @@ else
             Huidige maand: @Model.Dashboard.CurrentMonth.ToString("00")
         </div>
     </div>
+
+    @if (!hasPlanningData)
+    {
+        <section class="card border-primary-subtle mb-4 quick-start" aria-labelledby="quickStartTitle">
+            <div class="card-body p-4">
+                <div class="d-flex flex-column flex-lg-row justify-content-between gap-2 mb-3">
+                    <div>
+                        <h2 class="h4 mb-1" id="quickStartTitle">Aan de slag in drie stappen</h2>
+                        <p class="text-muted mb-0">Je planning is nog leeg. Volg deze route om meteen een bruikbaar dashboard en rapporten op te bouwen.</p>
+                    </div>
+                    <a asp-page="/Reports/Index" class="btn btn-outline-primary align-self-lg-start">Alle rapporten bekijken</a>
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-4">
+                        <a asp-page="/Payments/Create" class="quick-start-step h-100">
+                            <span class="quick-start-number" aria-hidden="true">1</span>
+                            <span>
+                                <strong>Voeg een recurrente betaling toe</strong>
+                                <small>Leg huur, energie, verzekeringen en andere vaste kosten vast.</small>
+                            </span>
+                        </a>
+                    </div>
+                    <div class="col-lg-4">
+                        <a asp-page="/Reconciliation/Manual" class="quick-start-step h-100">
+                            <span class="quick-start-number" aria-hidden="true">2</span>
+                            <span>
+                                <strong>Registreer saldo en betalingen</strong>
+                                <small>Punt de huidige maand af en vul je beschikbare saldo in.</small>
+                            </span>
+                        </a>
+                    </div>
+                    <div class="col-lg-4">
+                        <a asp-page="/Reports/Index" class="quick-start-step h-100">
+                            <span class="quick-start-number" aria-hidden="true">3</span>
+                            <span>
+                                <strong>Bekijk prognoses en verschillen</strong>
+                                <small>Kies een rapport voor een maand-, jaar- of provisieanalyse.</small>
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    }
 
     <div class="row g-3 mb-4">
         <div class="col-md-6 col-xl-3">
@@ -190,7 +239,8 @@ else
                         <a class="btn btn-outline-primary" asp-page="/Reports/ProvisionForecast">Provisieprognose</a>
                         <a class="btn btn-outline-primary" asp-page="/Reports/MonthlyCostVariance" asp-route-Year="@Model.Dashboard.Year" asp-route-Month="@Model.Dashboard.CurrentMonth">Maandelijkse kostenafwijking</a>
                         <a class="btn btn-outline-primary" asp-page="/Reports/RecurringPaymentProvision">Provisie recurrente betalingen</a>
-                        <a class="btn btn-outline-secondary" asp-page="/Reconciliation/Index">Reconciliatie</a>
+                        <a class="btn btn-outline-secondary" asp-page="/Reconciliation/Manual">Maand afpunten</a>
+                        <a class="btn btn-outline-secondary" asp-page="/Reports/Index">Alle rapporten</a>
                     </div>
                 </div>
             </div>

@@ -98,6 +98,7 @@ De app bevat meerdere rapporten om planning en realiteit te vergelijken:
 
 - Maandplan versus betaald;
 - Maandelijkse kostenafwijking;
+- Betalingen per post over jaren;
 - Provisieprognose;
 - Overzicht geplande posten;
 - Provisie recurrente betalingen.
@@ -189,9 +190,31 @@ Via `Data en backup` in het gebruikersmenu kan de gebruiker zien waar de lokale 
 
 Desktopmodus controleert optioneel op een nieuwe versie via `updates/latest.json`. Wanneer een nieuwere versie beschikbaar is, toont de app een updatebanner en, vanaf versies die deze functie bevatten, één keer per sessie een update-modal.
 
-### Windows Installer
+### Microsoft Store-package
 
-Voor Windows kan van de desktop-publish een Inno Setup installer worden gemaakt. Installeer eerst Inno Setup 7 of 6. Via `winget` kan dat bijvoorbeeld met:
+De aanbevolen distributie voor de Windows-desktopversie is een x64 MSIX-upload voor de Microsoft Store. Bouw het indienpakket met:
+
+```powershell
+.\tools\package-desktop-store.ps1
+```
+
+Het script bouwt de applicatie self-contained, schakelt de eigen updatechecker uit voor de Store-variant, controleert de payload op lokale secrets en schrijft het indienpakket naar:
+
+```text
+artifacts\store\DomesticFinancialPlanning-Store-<version>-x64.msixupload
+```
+
+De Store-identiteit is gekoppeld aan product-id `9MXRZ150MSCJ`. De publieke productpagina is:
+
+```text
+https://apps.microsoft.com/detail/9MXRZ150MSCJ
+```
+
+De website verwijst voor de desktopversie rechtstreeks naar deze Store-pagina. Microsoft verzorgt ondertekening, installatie en updates. De applicatie gebruikt in de Store-package `appsettings.Store.json` en krijgt geen downloadmelding voor de oude Inno Setup-installer.
+
+### Windows Installer (legacy/fallback)
+
+De bestaande Inno Setup-route blijft voorlopig beschikbaar als terugvaloptie, maar wordt niet meer op de publieke website aangeboden. Installeer eerst Inno Setup 7 of 6. Via `winget` kan dat bijvoorbeeld met:
 
 ```powershell
 winget install JRSoftware.InnoSetup
@@ -371,6 +394,25 @@ Standaard is de app dan beschikbaar op:
 ```text
 http://localhost:8080
 ```
+
+### HTTPS met Traefik
+
+Voor een publieke server kan Traefik TLS beëindigen, automatisch een Let's Encrypt-certificaat aanvragen en alle HTTP-verzoeken permanent naar HTTPS omleiden. Zorg dat de DNS A/AAAA-records van de hostnaam naar de server wijzen en dat poorten 80 en 443 bereikbaar zijn.
+
+Vul naast de databasewaarden ook deze waarden in `.env` in:
+
+```env
+APP_HOST=financialplanning.example.com
+TRAEFIK_ACME_EMAIL=admin@example.com
+```
+
+Start daarna de basisconfiguratie samen met de Traefik-overlay:
+
+```powershell
+docker compose -f docker-compose.yml -f docker-compose.traefik.yml up --build -d
+```
+
+De applicatie is dan beschikbaar op `https://<APP_HOST>`. Een aanvraag op `http://<APP_HOST>` krijgt centraal via Traefik een permanente redirect naar dezelfde URL via HTTPS. Poort 8080 blijft alleen via de loopbackinterface van de Docker-host bereikbaar voor lokale diagnose.
 
 ## Eerste stappen in de app
 

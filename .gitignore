@@ -3,6 +3,9 @@ bin/
 obj/
 artifacts/
 publish/
+AppPackages/
+BundleArtifacts/
+*.assets.cache
 
 # IDE/editor state
 .vs/

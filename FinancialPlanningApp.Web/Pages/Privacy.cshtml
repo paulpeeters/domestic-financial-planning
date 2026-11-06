@@ -3,6 +3,39 @@
 @{
     ViewData["Title"] = "Privacybeleid";
 }
-<h1>@ViewData["Title"]</h1>
+<div class="row justify-content-center">
+    <div class="col-lg-9 col-xl-8">
+        <h1 class="mb-1">@ViewData["Title"]</h1>
+        <p class="text-muted">Laatst bijgewerkt op 23 oktober 2026</p>
 
-<p>Gebruik deze pagina om het privacybeleid van de applicatie te beschrijven.</p>
+        <div class="alert alert-info">
+            De desktopversie bewaart je financiële gegevens lokaal op je eigen computer en stuurt ze niet automatisch naar PWARE.
+        </div>
+
+        <h2 class="h4 mt-4">Lokale desktopversie</h2>
+        <p>
+            Account-, plannings-, betalings-, import- en backupgegevens worden in een lokale SQLite-database opgeslagen.
+            Jij beheert de computer, database en backups en bepaalt zelf hoelang je deze gegevens bewaart.
+        </p>
+        <p>
+            De app kan de publieke website benaderen om te controleren of een nieuwe versie beschikbaar is. Daarbij worden geen financiële
+            gegevens meegestuurd. De webserver kan wel gewone technische loggegevens ontvangen, zoals IP-adres, tijdstip, opgevraagde URL
+            en browseridentificatie.
+        </p>
+
+        <h2 class="h4 mt-4">Zelf gehoste serverversie</h2>
+        <p>
+            Bij een serverinstallatie is de beheerder van die installatie verantwoordelijk voor de verwerking. De toepassing kan accountgegevens,
+            financiële planning en importgegevens, tenantrechten en aanmeldhistoriek verwerken. Technische sessie- en authenticatiecookies zijn
+            noodzakelijk om de toepassing veilig te gebruiken. PWARE ontvangt deze gegevens niet enkel omdat de software wordt gebruikt.
+        </p>
+
+        <h2 class="h4 mt-4">Meer informatie en contact</h2>
+        <p>
+            Het volledige beleid, met informatie over doeleinden, bewaartermijnen, doorgifte en je rechten, staat op
+            <a href="https://financialplanning.pware.be/privacy/" target="_blank" rel="noopener">financialplanning.pware.be/privacy</a>.
+            Voor vragen kun je contact opnemen via
+            <a href="https://github.com/paulpeeters" target="_blank" rel="noopener">het GitHub-profiel van de auteur</a>.
+        </p>
+    </div>
+</div>

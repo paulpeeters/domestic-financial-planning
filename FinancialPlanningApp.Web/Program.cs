@@ -12,7 +12,6 @@ using FinancialPlanningApp.Web.Services.Imports;
 using FinancialPlanningApp.Web.Services.Payments;
 using FinancialPlanningApp.Web.Services.Planning;
 using FinancialPlanningApp.Web.Services.Reconciliation;
-using Microsoft.AspNetCore.Hosting.StaticWebAssets;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Serilog;
@@ -24,10 +23,21 @@ SqlMapper.AddTypeHandler(new SqlDateOnlyTypeHandler());
 SqlMapper.AddTypeHandler(new SqlDecimalTypeHandler());
 
 var desktopModeMarkerPath = Path.Combine(AppContext.BaseDirectory, "desktop.mode");
-var isDesktopEnvironment = File.Exists(desktopModeMarkerPath)
+var storeModeMarkerPath = Path.Combine(AppContext.BaseDirectory, "store.mode");
+var hasDesktopModeMarker = File.Exists(desktopModeMarkerPath);
+var hasStoreModeMarker = File.Exists(storeModeMarkerPath);
+var isDesktopEnvironment = hasDesktopModeMarker
+    || hasStoreModeMarker
     || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Desktop", StringComparison.OrdinalIgnoreCase)
-    || string.Equals(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"), "Desktop", StringComparison.OrdinalIgnoreCase);
-if (File.Exists(desktopModeMarkerPath))
+    || string.Equals(Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT"), "Store", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"), "Desktop", StringComparison.OrdinalIgnoreCase)
+    || string.Equals(Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT"), "Store", StringComparison.OrdinalIgnoreCase);
+if (hasStoreModeMarker)
+{
+    Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Store");
+    Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Store");
+}
+else if (hasDesktopModeMarker)
 {
     Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Desktop");
     Environment.SetEnvironmentVariable("DOTNET_ENVIRONMENT", "Desktop");
@@ -50,8 +60,11 @@ if (isDesktopEnvironment)
     }
 }
 
-var builder = WebApplication.CreateBuilder(args);
-StaticWebAssetsLoader.UseStaticWebAssets(builder.Environment, builder.Configuration);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory
+});
 
 var isSingleUserDesktopConfiguration = string.Equals(
     builder.Configuration.GetValue<string>($"{ApplicationModeOptions.SectionName}:Mode"),
@@ -173,6 +186,10 @@ var forwardedHeadersOptions = new ForwardedHeadersOptions
 forwardedHeadersOptions.KnownIPNetworks.Clear();
 forwardedHeadersOptions.KnownProxies.Clear();
 
+// Process the proxy headers before middleware that depends on the request scheme.
+// Traefik terminates TLS and forwards the original HTTPS scheme in X-Forwarded-Proto.
+app.UseForwardedHeaders(forwardedHeadersOptions);
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -183,7 +200,6 @@ if (!isSingleUserDesktop)
 {
     app.UseHttpsRedirection();
 }
-app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseRequestLocalization(requestLocalizationOptions);
 app.UseStaticFiles();
 app.UseRouting();
@@ -191,8 +207,7 @@ app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-app.MapRazorPages().WithStaticAssets();
+app.MapRazorPages();
 
 try
 {

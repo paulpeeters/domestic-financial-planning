@@ -1,0 +1,70 @@
+@page
+@model FinancialPlanningApp.Web.Pages.Reports.IndexModel
+@{
+    ViewData["Title"] = "Rapporten";
+}
+
+<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-2 mb-4">
+    <div>
+        <h1 class="h2 mb-1">Rapporten</h1>
+        <p class="text-muted mb-0">Kies rechtstreeks welk inzicht je nodig hebt. Je kunt altijd via Rapporten naar dit overzicht terugkeren.</p>
+    </div>
+    <a asp-page="/Index" class="btn btn-outline-secondary">Terug naar dashboard</a>
+</div>
+
+<div class="row g-3 report-navigation-grid">
+    <div class="col-md-6 col-xl-4">
+        <a asp-page="/Reports/MonthlyPlanVsPaid" class="card h-100 text-decoration-none report-navigation-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Maandplan versus betaald</h2>
+                <p class="card-text text-muted">Vergelijk geplande bedragen met de werkelijk betaalde kosten per maand.</p>
+                <span class="fw-semibold">Rapport openen →</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <a asp-page="/Reports/MonthlyCostVariance" class="card h-100 text-decoration-none report-navigation-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Maandelijkse kostenafwijking</h2>
+                <p class="card-text text-muted">Onderzoek verschillen tussen verwachtingen en betalingen, met details per post.</p>
+                <span class="fw-semibold">Rapport openen →</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <a asp-page="/Reports/PaymentsByItem" class="card h-100 text-decoration-none report-navigation-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Betalingen per post over jaren</h2>
+                <p class="card-text text-muted">Volg de evolutie van recurrente kosten over meerdere jaren.</p>
+                <span class="fw-semibold">Rapport openen →</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <a asp-page="/Reports/ProvisionForecast" class="card h-100 text-decoration-none report-navigation-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Provisieprognose</h2>
+                <p class="card-text text-muted">Bereken het verwachte saldo en de benodigde provisies voor de komende maanden.</p>
+                <span class="fw-semibold">Rapport openen →</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <a asp-page="/Reports/PlannedItemsOverview" class="card h-100 text-decoration-none report-navigation-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Overzicht geplande posten</h2>
+                <p class="card-text text-muted">Bekijk geplande en werkelijke maand- en jaarbedragen naast elkaar.</p>
+                <span class="fw-semibold">Rapport openen →</span>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6 col-xl-4">
+        <a asp-page="/Reports/RecurringPaymentProvision" class="card h-100 text-decoration-none report-navigation-card">
+            <div class="card-body">
+                <h2 class="h5 card-title">Provisie recurrente betalingen</h2>
+                <p class="card-text text-muted">Controleer de provisiebehoefte op basis van alle terugkerende betalingen.</p>
+                <span class="fw-semibold">Rapport openen →</span>
+            </div>
+        </a>
+    </div>
+</div>

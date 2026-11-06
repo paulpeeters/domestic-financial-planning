@@ -3,7 +3,8 @@ param(
     [string]$Version = "1.0.4.0",
     [string]$InstallerPath = "",
     [string]$ServerZipPath = "",
-    [string]$OutputPath = ""
+    [string]$OutputPath = "",
+    [switch]$IncludeInstaller
 )
 
 $ErrorActionPreference = "Stop"
@@ -18,7 +19,7 @@ function Resolve-DeployRoot {
 }
 
 $deployRoot = Resolve-DeployRoot
-if ([string]::IsNullOrWhiteSpace($InstallerPath)) {
+if ($IncludeInstaller -and [string]::IsNullOrWhiteSpace($InstallerPath)) {
     $InstallerPath = Join-Path $deployRoot "Installer\DomesticFinancialPlanning-Setup-$Version.exe"
 }
 
@@ -32,14 +33,18 @@ if ([string]::IsNullOrWhiteSpace($OutputPath)) {
 
 $items = @(
     @{
-        Path = $InstallerPath
-        Name = "DomesticFinancialPlanning-Setup-$Version.exe"
-    },
-    @{
         Path = $ServerZipPath
         Name = "DomesticFinancialPlanning-Server-$Version.zip"
     }
 )
+if ($IncludeInstaller) {
+    $items = @(
+        @{
+            Path = $InstallerPath
+            Name = "DomesticFinancialPlanning-Setup-$Version.exe"
+        }
+    ) + $items
+}
 
 $lines = foreach ($item in $items) {
     if (-not (Test-Path -LiteralPath $item.Path)) {

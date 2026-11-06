@@ -249,8 +249,8 @@
           Een lokale webapp om terugkerende huishoudelijke kosten te plannen, maandelijkse provisies op te volgen en afwijkingen tussen verwachte en betaalde kosten snel te verklaren.
         </p>
         <div class="buttons">
-          <a class="button primary" href="/downloads/DomesticFinancialPlanning-Setup-1.0.5.0.exe">Windows installer downloaden</a>
-          <a class="button secondary" href="/updates/latest.json">Update-info bekijken</a>
+          <a class="button primary" href="https://apps.microsoft.com/detail/9MXRZ150MSCJ">Downloaden via Microsoft Store</a>
+          <a class="button secondary" href="#serverversie">Serverversie bekijken</a>
         </div>
       </div>
       <aside class="hero-panel">
@@ -280,34 +280,33 @@
     </section>
 
     <section>
-      <h2>Beschikbare downloads</h2>
+      <h2>Installeren</h2>
       <div class="download">
         <div>
           <h3>Windows desktopversie</h3>
-          <p>Self-contained installer. Installeert per gebruiker en gebruikt een lokale SQLite-database onder <code>%LOCALAPPDATA%\DomesticFinancialPlanning</code>.</p>
-          <p class="checksum">SHA-256: <code>D3E5F5D5D3BC48874B87A159642B4BE335533A797D7A5AC904768F133E38D179</code></p>
+          <p>Installeer veilig via de Microsoft Store. Windows verzorgt de installatie, ondertekening en automatische updates. De desktopversie gebruikt een lokale SQLite-database.</p>
         </div>
-        <a class="button primary" href="/downloads/DomesticFinancialPlanning-Setup-1.0.5.0.exe">Download</a>
+        <a class="button primary" href="https://apps.microsoft.com/detail/9MXRZ150MSCJ">Open Microsoft Store</a>
       </div>
-      <p class="download-warning">
-        Windows of Edge kan melden dat deze installer niet vaak wordt gedownload. Dat is normaal voor een nieuwe, gratis app zonder commerciële code-signing reputatie. Controleer dat de download van <code>financialplanning.pware.be</code> komt voordat je het bestand opent.
-      </p>
       <div class="steps">
-        <h3>Downloaden met Microsoft Edge</h3>
+        <h3>Overstappen van de oudere EXE-versie</h3>
         <ol>
-          <li>Klik in de downloadmelding op de drie puntjes naast het bestand.</li>
-          <li>Kies <strong>Behouden</strong>.</li>
-          <li>Kies daarna eventueel <strong>Meer weergeven</strong> en opnieuw <strong>Toch behouden</strong>.</li>
-          <li>Open het bestand alleen wanneer de naam begint met <code>DomesticFinancialPlanning-Setup</code> en de download van deze site komt.</li>
+          <li>Maak in de oude app via <strong>Data en backup</strong> eerst een backup.</li>
+          <li>Sluit de oude app volledig af en installeer daarna de Microsoft Store-versie met hetzelfde Windows-account.</li>
+          <li>Start de Store-versie en controleer of je bestaande gegevens zichtbaar zijn. De lokale database wordt automatisch hergebruikt.</li>
+          <li>Verwijder vervolgens de oude EXE-versie via <strong>Instellingen &gt; Apps &gt; Geïnstalleerde apps</strong>. Kies daar de vermelding met het oude versienummer.</li>
         </ol>
       </div>
-      <div class="download">
+      <p class="download-warning">
+        De Store-installatie vervangt of verwijdert de oude EXE-versie niet automatisch. Zolang de oude app nog draait, kan die opnieuw in je browser worden geopend in plaats van de Store-versie. Sluit of verwijder de oude versie daarom na de controle. Je database onder <code>%LOCALAPPDATA%\DomesticFinancialPlanning</code> blijft behouden.
+      </p>
+      <div class="download" id="serverversie">
         <div>
           <h3>Serverversie</h3>
           <p>Optioneel ZIP-pakket voor eigen hosting. Vereist .NET/ASP.NET runtime en eigen configuratie voor MySQL/MariaDB.</p>
-          <p class="checksum">SHA-256: <code>D098DED474F487510F7C24FF613090A54DD1586AC407C91689A7A4A15553C9A8</code></p>
+          <p class="checksum">SHA-256: <code>03150D117C82F38F84A1660CCB1DD85EDB979FB285F2068E90F149BF8E729F33</code></p>
         </div>
-        <a class="button secondary" href="/downloads/DomesticFinancialPlanning-Server-1.0.5.0.zip">Server ZIP</a>
+        <a class="button secondary" href="/downloads/DomesticFinancialPlanning-Server-1.0.9.0.zip">Server ZIP</a>
       </div>
     </section>
 
@@ -356,7 +355,8 @@
 
   <footer>
     <div class="wrap">
-      Domestic Financial Planning · PWARE · Versie 1.0.5.0 · GNU AGPL v3.0-or-later
+      Domestic Financial Planning · PWARE · Versie 1.0.9.0 · GNU AGPL v3.0-or-later ·
+      <a href="/privacy/">Privacybeleid</a>
     </div>
   </footer>
 </body>

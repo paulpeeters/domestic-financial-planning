@@ -21,7 +21,9 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       Database__ConnectionString: Server=db;Port=3306;Database=${DB_NAME};User ID=${DB_USER};Password=${DB_PASSWORD};Allow User Variables=true;
     ports:
-      - "8080:8080"
+      # Keep the direct development endpoint local. In the Traefik setup,
+      # external traffic reaches this container only through the proxy.
+      - "127.0.0.1:8080:8080"
     volumes:
       - uploads:/app/uploads
 

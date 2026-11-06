@@ -1,9 +1,9 @@
 {
-  "version": "1.0.5.0",
-  "releaseDate": "2026-10-20",
+  "version": "1.0.9.0",
+  "releaseDate": "2026-11-04",
   "channel": "stable",
-  "downloadUrl": "https://financialplanning.pware.be/downloads/DomesticFinancialPlanning-Setup-1.0.5.0.exe",
-  "sha256": "D3E5F5D5D3BC48874B87A159642B4BE335533A797D7A5AC904768F133E38D179",
+  "downloadUrl": "https://apps.microsoft.com/detail/9MXRZ150MSCJ",
+  "sha256": "",
   "releaseNotesUrl": "https://financialplanning.pware.be/",
   "minimumSupportedVersion": "1.0.0.0"
 }
